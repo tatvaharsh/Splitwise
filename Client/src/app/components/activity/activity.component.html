@@ -1,0 +1,33 @@
+<div class="activity-container">
+    <div class="header">
+      <h1>Activity</h1>
+    </div>
+  
+    <div class="activity-list">
+      <ng-container *ngIf="(activities$ | async)?.length; else noActivities">
+        <mat-card class="activity-card" *ngFor="let activity of activities$ | async">
+          <div class="activity-card-content">
+            <div class="activity-icon">
+              <mat-icon>{{ getActivityIcon(activity) }}</mat-icon>
+            </div>
+            <div class="activity-details">
+              <div class="activity-description">{{ activity.description }}</div>
+              <div class="activity-date">{{ formatDate(activity.date) }}</div>
+            </div>
+            <div class="activity-amount" *ngIf="activity.amount">
+              ₹{{ activity.amount }}
+            </div>
+          </div>
+        </mat-card>
+      </ng-container>
+  
+      <ng-template #noActivities>
+        <div class="empty-state">
+          <mat-icon class="empty-icon">history</mat-icon>
+          <h2>No activity yet</h2>
+          <p>Your recent activity will appear here</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+  

@@ -1,0 +1,83 @@
+<div class="app-container">
+    <!-- Top App Bar -->
+    <mat-toolbar color="primary" class="app-toolbar">
+      <div class="logo-container">
+        <img src="assets/logo.png" alt="Splitwise Logo" class="app-logo" />
+        <span class="app-title">SplitEase</span>
+      </div>
+      <div class="toolbar-actions">
+        <button mat-icon-button aria-label="Search">
+          <mat-icon>search</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="profileMenu" aria-label="Profile">
+          <mat-icon>account_circle</mat-icon>
+        </button>
+        <mat-menu #profileMenu="matMenu">
+          <button mat-menu-item (click)="openProfileMenu()">
+            <mat-icon>person</mat-icon>
+            <span>Profile</span>
+          </button>
+          <button mat-menu-item>
+            <mat-icon>settings</mat-icon>
+            <span>Settings</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item>
+            <mat-icon>exit_to_app</mat-icon>
+            <span>Logout</span>
+          </button>
+        </mat-menu>
+      </div>
+    </mat-toolbar>
+  
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <router-outlet></router-outlet>
+    </div>
+  
+    <!-- Floating Action Button -->
+    <button 
+      mat-fab 
+      color="accent" 
+      class="fab-button" 
+      (click)="openAddExpenseDialog()"
+      aria-label="Add expense">
+      <mat-icon>add</mat-icon>
+    </button>
+  
+    <!-- Bottom Navigation Bar -->
+    <div class="bottom-nav">
+      <button 
+        mat-button 
+        class="nav-button" 
+        [class.active]="currentTab === 'groups'"
+        (click)="navigateTo('groups')">
+        <div class="nav-content">
+          <mat-icon>group</mat-icon>
+          <span>Groups</span>
+        </div>
+      </button>
+      <button 
+        mat-button 
+        class="nav-button" 
+        [class.active]="currentTab === 'friends'"
+        (click)="navigateTo('friends')">
+        <div class="nav-content">
+          <mat-icon>person</mat-icon>
+          <span>Friends</span>
+        </div>
+      </button>
+      <button 
+        mat-button 
+        class="nav-button" 
+        [class.active]="currentTab === 'activity'"
+        (click)="navigateTo('activity')">
+        <div class="nav-content">
+          <mat-icon>history</mat-icon>
+          <span>Activity</span>
+        </div>
+      </button>
+    </div>
+  </div>
+  
+<!-- <router-outlet /> -->

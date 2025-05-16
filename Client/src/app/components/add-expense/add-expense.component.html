@@ -1,0 +1,98 @@
+<div class="add-expense-container" [formGroup]="expenseForm">
+    <div class="expense-header">
+      <button mat-icon-button (click)="onCancel()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h2 class="header-title">
+        {{ currentStep === 0 ? 'Add expense' : currentStep === 1 ? 'Who paid?' : 'Adjust split' }}
+      </h2>
+      <button mat-icon-button (click)="onSubmit()" class="save-button" [disabled]="expenseForm.invalid">
+        <mat-icon>check</mat-icon>
+      </button>
+    </div>
+  
+    <div class="expense-content">
+      <!-- Step 1 -->
+      <div class="expense-step" *ngIf="currentStep === 0">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <input matInput formControlName="description" placeholder="e.g., Dinner, Movie">
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Amount</mat-label>
+          <input matInput type="number" formControlName="amount" (input)="onAmountChange()" placeholder="₹0.00">
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="date">
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+  
+        <!-- Group/ Friend Selection -->
+        <div class="with-section">
+          <span class="with-label">With you and:</span>
+          <ng-container *ngIf="group">{{ group.name }}</ng-container>
+          <ng-container *ngIf="friend">{{ friend.name }}</ng-container>
+          <ng-container *ngIf="!group && !friend">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Select Group (optional)</mat-label>
+              <mat-select formControlName="groupId">
+                <mat-option *ngFor="let g of groups" [value]="g.id">{{ g.name }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </ng-container>
+        </div>
+  
+        <button mat-raised-button color="primary" (click)="nextStep()" [disabled]="expenseForm.invalid">Next</button>
+      </div>
+  
+      <!-- Step 2 -->
+      <div class="expense-step" *ngIf="currentStep === 1">
+        <div *ngFor="let participant of participants">
+          <mat-radio-group formControlName="paidBy">
+            <mat-radio-button [value]="participant.id">{{ getParticipantName(participant) }}</mat-radio-button>
+          </mat-radio-group>
+        </div>
+        <div class="actions">
+          <button mat-button (click)="previousStep()">Back</button>
+          <button mat-raised-button color="primary" (click)="nextStep()">Next</button>
+        </div>
+      </div>
+  
+      <!-- Step 3 -->
+      <div class="expense-step" *ngIf="currentStep === 2">
+        <mat-button-toggle-group [value]="splitMethod" (change)="changeSplitMethod($event.value)" appearance="standard">
+          <mat-button-toggle *ngFor="let method of splitMethods" [value]="method.value">
+            <mat-icon>{{ method.icon }}</mat-icon> {{ method.label }}
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+  
+        <div *ngFor="let participant of participants">
+          <div class="participant-row">
+            <mat-checkbox [(ngModel)]="selectedParticipants[participant.id]" (change)="updateSplitAmounts()">
+              {{ getParticipantName(participant) }}
+            </mat-checkbox>
+            <span *ngIf="splitMethod === 'equal'">₹{{ splitAmounts[participant.id] | number:'1.2-2' }}</span>
+            <span *ngIf="splitMethod === 'percent'">₹{{ splitAmounts[participant.id] | number:'1.2-2' }}</span>
+          </div>
+        </div>
+  
+        <div *ngIf="splitMethod === 'percent'" class="percentage-warning">
+          Remaining: {{ getRemainingPercentage() }}%
+        </div>
+  
+        <div *ngIf="splitMethod !== 'percent'" class="amount-warning">
+          Remaining: ₹{{ getRemainingAmount() | number:'1.2-2' }}
+        </div>
+  
+        <div class="actions">
+          <button mat-button (click)="previousStep()">Back</button>
+          <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="getRemainingAmount() !== 0 && splitMethod !== 'percent'">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  

@@ -1,0 +1,162 @@
+// Variables
+$primary-color: #1cc29f;
+$secondary-color: #8656cd;
+$danger-color: #ff652f;
+$success-color: #5bc5a7;
+$text-color: #333333;
+$light-gray: #f6f6f6;
+$medium-gray: #e0e0e0;
+$dark-gray: #999999;
+$white: #ffffff;
+$border-radius: 8px;
+
+.expense-form {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: $text-color;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid $medium-gray;
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: $white;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+}
+
+.amount-input {
+  position: relative;
+
+  .currency-symbol {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $dark-gray;
+  }
+
+  input {
+    padding-left: 1.8rem;
+  }
+}
+
+.paid-by-options, .split-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  .paid-by-option, .split-option {
+    padding: 0.5rem 1rem;
+    border: 1px solid $medium-gray;
+    border-radius: 4px;
+    transition: all 0.2s;
+    background-color: $white;
+
+    &:hover {
+      background-color: $light-gray;
+    }
+
+    &.active {
+      background-color: $primary-color;
+      color: $white;
+      border-color: $primary-color;
+    }
+  }
+}
+
+.participants-list {
+  margin-top: 0.5rem;
+  border: 1px solid $medium-gray;
+  border-radius: $border-radius;
+  overflow: hidden;
+}
+
+.participant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem;
+  border-bottom: 1px solid $medium-gray;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .participant-name {
+    font-weight: 500;
+  }
+
+  .participant-amount, .participant-percentage, .participant-shares {
+    position: relative;
+    width: 120px;
+
+    input {
+      padding: 0.5rem;
+      padding-left: 1.5rem;
+      width: 100%;
+    }
+  }
+
+  .currency-symbol {
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $dark-gray;
+  }
+
+  .percentage-symbol, .shares-label {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $dark-gray;
+    font-size: 0.8rem;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+
+  .cancel-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    background-color: $light-gray;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: $medium-gray;
+    }
+  }
+
+  .save-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    background-color: $primary-color;
+    color: $white;
+    font-weight: 500;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: darken($primary-color, 5%);
+    }
+  }
+}
