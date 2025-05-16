@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\SplitWise.API.csproj": {}
+    "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.API\\SplitWise.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\SplitWise.API.csproj": {
+    "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.API\\SplitWise.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\SplitWise.API.csproj",
+        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.API\\SplitWise.API.csproj",
         "projectName": "SplitWise.API",
-        "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\SplitWise.API.csproj",
+        "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.API\\SplitWise.API.csproj",
         "packagesPath": "C:\\Users\\pca114\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\obj\\",
+        "outputPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.API\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\pca114\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -26,8 +26,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\SplitWise.Service.csproj": {
-                "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\SplitWise.Service.csproj"
+              "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\SplitWise.Service.csproj": {
+                "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\SplitWise.Service.csproj"
               }
             }
           }
@@ -84,14 +84,14 @@
         }
       }
     },
-    "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj": {
+    "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj",
         "projectName": "SplitWise.Domain",
-        "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj",
+        "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj",
         "packagesPath": "C:\\Users\\pca114\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\obj\\",
+        "outputPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\pca114\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -167,14 +167,14 @@
         }
       }
     },
-    "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj": {
+    "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj",
+        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj",
         "projectName": "SplitWise.Repository",
-        "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj",
+        "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj",
         "packagesPath": "C:\\Users\\pca114\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\obj\\",
+        "outputPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\pca114\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -189,8 +189,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj": {
-                "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj"
+              "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj": {
+                "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj"
               }
             }
           }
@@ -230,14 +230,14 @@
         }
       }
     },
-    "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\SplitWise.Service.csproj": {
+    "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\SplitWise.Service.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\SplitWise.Service.csproj",
+        "projectUniqueName": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\SplitWise.Service.csproj",
         "projectName": "SplitWise.Service",
-        "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\SplitWise.Service.csproj",
+        "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\SplitWise.Service.csproj",
         "packagesPath": "C:\\Users\\pca114\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Service\\obj\\",
+        "outputPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Service\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\pca114\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -252,11 +252,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj": {
-                "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj"
+              "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj": {
+                "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj"
               },
-              "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj": {
-                "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj"
+              "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj": {
+                "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj"
               }
             }
           }

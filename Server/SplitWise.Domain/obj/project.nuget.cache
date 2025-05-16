@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "EWIyR8RvvXg=",
+  "dgSpecHash": "nO7Uhpx3v+s=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj",
+  "projectFilePath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pca114\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\pca114\\.nuget\\packages\\microsoft.aspnetcore.http\\2.3.0\\microsoft.aspnetcore.http.2.3.0.nupkg.sha512",

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "r7Ewj38LHoA=",
+  "dgSpecHash": "ogCV80NJQdU=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Repository\\SplitWise.Repository.csproj",
+  "projectFilePath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Repository\\SplitWise.Repository.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pca114\\.nuget\\packages\\microsoft.aspnetcore.http\\2.3.0\\microsoft.aspnetcore.http.2.3.0.nupkg.sha512",
     "C:\\Users\\pca114\\.nuget\\packages\\microsoft.aspnetcore.http.abstractions\\2.3.0\\microsoft.aspnetcore.http.abstractions.2.3.0.nupkg.sha512",

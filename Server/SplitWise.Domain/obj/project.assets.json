@@ -3060,11 +3060,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj",
+      "projectUniqueName": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj",
       "projectName": "SplitWise.Domain",
-      "projectPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\SplitWise.Domain.csproj",
+      "projectPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\SplitWise.Domain.csproj",
       "packagesPath": "C:\\Users\\pca114\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.Domain\\obj\\",
+      "outputPath": "C:\\Users\\pca114\\Desktop\\SplitEase\\Server\\SplitWise.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\pca114\\AppData\\Roaming\\NuGet\\NuGet.Config"

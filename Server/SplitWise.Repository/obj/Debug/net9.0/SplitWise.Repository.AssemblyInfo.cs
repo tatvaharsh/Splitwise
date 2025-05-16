@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SplitWise.Repository")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b259310dfa6520229b58430dd77aae08488a2da0")]
 [assembly: System.Reflection.AssemblyProductAttribute("SplitWise.Repository")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SplitWise.Repository")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
