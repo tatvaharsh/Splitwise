@@ -1,0 +1,14 @@
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\bin\Debug\net9.0\SplitWise.Domain.deps.json
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\bin\Debug\net9.0\SplitWise.Domain.runtimeconfig.json
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\bin\Debug\net9.0\SplitWise.Domain.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\bin\Debug\net9.0\SplitWise.Domain.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.csproj.AssemblyReference.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.AssemblyInfoInputs.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.AssemblyInfo.cs
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.csproj.CoreCompileInputs.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\refint\SplitWise.Domain.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\SplitWise.Domain.genruntimeconfig.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Domain\obj\Debug\net9.0\ref\SplitWise.Domain.dll

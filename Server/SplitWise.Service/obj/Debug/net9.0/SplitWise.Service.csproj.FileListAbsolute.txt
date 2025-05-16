@@ -1,0 +1,17 @@
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Service.deps.json
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Service.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Service.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Domain.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Repository.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Repository.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\bin\Debug\net9.0\SplitWise.Domain.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.csproj.AssemblyReference.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.AssemblyInfoInputs.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.AssemblyInfo.cs
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.csproj.CoreCompileInputs.cache
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWis.00BADB4F.Up2Date
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\refint\SplitWise.Service.dll
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\SplitWise.Service.pdb
+C:\Users\pca114\Desktop\Splitwise\Backend\SplitWise.Service\obj\Debug\net9.0\ref\SplitWise.Service.dll

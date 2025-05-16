@@ -1,0 +1,42 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SplitWise.API", "SplitWise.API\SplitWise.API.csproj", "{537388BA-29A7-E139-E996-82DFD6EC913A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SplitWise.Service", "SplitWise.Service\SplitWise.Service.csproj", "{7928BE45-F871-4095-B1FC-7EFB23FEFDD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SplitWise.Repository", "SplitWise.Repository\SplitWise.Repository.csproj", "{C936C2F3-DF8D-47AE-95AC-80C706D9D11D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SplitWise.Domain", "SplitWise.Domain\SplitWise.Domain.csproj", "{E5B16075-0B95-4099-B914-457B83BA5E7C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{537388BA-29A7-E139-E996-82DFD6EC913A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{537388BA-29A7-E139-E996-82DFD6EC913A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{537388BA-29A7-E139-E996-82DFD6EC913A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{537388BA-29A7-E139-E996-82DFD6EC913A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7928BE45-F871-4095-B1FC-7EFB23FEFDD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7928BE45-F871-4095-B1FC-7EFB23FEFDD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7928BE45-F871-4095-B1FC-7EFB23FEFDD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7928BE45-F871-4095-B1FC-7EFB23FEFDD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C936C2F3-DF8D-47AE-95AC-80C706D9D11D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C936C2F3-DF8D-47AE-95AC-80C706D9D11D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C936C2F3-DF8D-47AE-95AC-80C706D9D11D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C936C2F3-DF8D-47AE-95AC-80C706D9D11D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5B16075-0B95-4099-B914-457B83BA5E7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5B16075-0B95-4099-B914-457B83BA5E7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5B16075-0B95-4099-B914-457B83BA5E7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5B16075-0B95-4099-B914-457B83BA5E7C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {056EA9B7-69D3-4D2F-B4E1-2EC18F40C0BB}
+	EndGlobalSection
+EndGlobal

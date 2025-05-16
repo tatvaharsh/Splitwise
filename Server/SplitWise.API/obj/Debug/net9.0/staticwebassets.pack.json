@@ -1,0 +1,37 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\wwwroot\\Images\\customer\\3ea2f574-9b85-4721-97ab-4a59f20f68aa.png",
+      "PackagePath": "staticwebassets\\Images\\customer\\3ea2f574-9b85-4721-97ab-4a59f20f68aa.png"
+    },
+    {
+      "Id": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\wwwroot\\Images\\customer\\6665e703-9565-4daf-9f35-6539eefce007.jpg",
+      "PackagePath": "staticwebassets\\Images\\customer\\6665e703-9565-4daf-9f35-6539eefce007.jpg"
+    },
+    {
+      "Id": "C:\\Users\\pca114\\Desktop\\Splitwise\\Backend\\SplitWise.API\\wwwroot\\Images\\customer\\f26e3608-60aa-4681-a36b-e33fed918c27.png",
+      "PackagePath": "staticwebassets\\Images\\customer\\f26e3608-60aa-4681-a36b-e33fed918c27.png"
+    },
+    {
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.SplitWise.API.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.SplitWise.API.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.build.SplitWise.API.props",
+      "PackagePath": "build\\SplitWise.API.props"
+    },
+    {
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.buildMultiTargeting.SplitWise.API.props",
+      "PackagePath": "buildMultiTargeting\\SplitWise.API.props"
+    },
+    {
+      "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.buildTransitive.SplitWise.API.props",
+      "PackagePath": "buildTransitive\\SplitWise.API.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
