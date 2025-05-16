@@ -20,7 +20,9 @@ public class GroupController(IGroupService service, IMapper mapper, IAppContextS
     public async Task<IActionResult> GetList()
     {
         string baseURL = _appContextService.GetBaseURL();
-        List<Group> groupEntities = await _service.GetListAsync(x => true, x => x.GroupMembers);
+        List<Group> groupEntities = await _service.GetListAsync(x => true,
+                    query => query
+                            .Include(x => x.GroupMembers));
         List<GroupResponse> groupResponses = groupEntities.Select(group => new GroupResponse
         {
             Id = group.Id,

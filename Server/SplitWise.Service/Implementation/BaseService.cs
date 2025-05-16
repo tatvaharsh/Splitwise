@@ -36,8 +36,15 @@ public class BaseService<T>(IBaseRepository<T> repository) : IBaseService<T> whe
         return await _repository.GetAsync(predicate, include).FirstOrDefaultAsync();
     }
 
-    public async Task<List<T>> GetListAsync(Expression<Func<T, bool>>? predicate, params Expression<Func<T, object>>[] includes)
-        => await _repository.GetAsync(predicate, includes).ToListAsync();
+    // public async Task<List<T>> GetListAsync(Expression<Func<T, bool>>? predicate, params Expression<Func<T, object>>[] includes)
+    //     => await _repository.GetAsync(predicate, includes).ToListAsync();
+    public async Task<List<T>> GetListAsync(
+        Expression<Func<T, bool>>? predicate = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null)
+    {
+        IQueryable<T> query = _repository.GetAsync(predicate, include);
+        return await query.ToListAsync();
+    }
 
     public async Task<T> GetByIdAsync(Guid id)
         => await _repository.GetByIdAsync(id)

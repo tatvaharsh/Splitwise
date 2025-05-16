@@ -7,6 +7,7 @@ using SplitWise.Repository.Implementation;
 using SplitWise.Service.Interface;
 using SplitWise.Service.Implementation;
 using Microsoft.EntityFrameworkCore;
+using SplitWise.Service;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -26,6 +27,7 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IGroupMemberService, GroupMemberService>();
 builder.Services.AddScoped<IAppContextService, AppContextService>();
+builder.Services.AddScoped<IFriendService, FriendService>();
 
 
 builder.Services.AddControllers();

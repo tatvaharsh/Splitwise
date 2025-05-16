@@ -1,6 +1,9 @@
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.EntityFrameworkCore;
 using SplitWise.Domain;
 using SplitWise.Domain.Data;
 using SplitWise.Domain.DTO.Requests;
+using SplitWise.Domain.DTO.Response;
 using SplitWise.Domain.Generic.Helper;
 using SplitWise.Repository.Interface;
 using SplitWise.Service.Interface;
@@ -49,6 +52,28 @@ IGroupMemberService groupMemberService) : BaseService<Group>(baseRepository), IG
         await _activityService.AddAsync(activityEntity);
         return SplitWiseConstants.RECORD_CREATED;
     }
+
+    public async Task<List<OnlyGroupResponse>> GetGroupsAsync()
+    {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+        List<Group> groupEntities = await GetListAsync(
+                    x => x.GroupMembers.Any(m => m.Memberid == userId),
+                    query => query.Include(x => x.GroupMembers)
+                    .ThenInclude(m => m.Member));
+        List<OnlyGroupResponse> groupResponses = groupEntities.Select(group => new OnlyGroupResponse
+        {
+            Groupname = group.Groupname,
+            Members = group.GroupMembers.Select(member => new MemberResponse
+            {
+                Id = member.Id,
+                Name = member.Member.Username
+            }).ToList(),
+        }).ToList();
+        return groupResponses;
+    }
+
 
     public async Task<string> UpdateGroupAsync(GroupUpdateRequest request)
     {

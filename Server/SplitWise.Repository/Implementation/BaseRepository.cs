@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using SplitWise.Domain;
 using SplitWise.Domain.Data;
-using SplitWise.Domain.Generic.Entity;
 using SplitWise.Repository.Interface;
 
 namespace SplitWise.Repository.Implementation;
@@ -60,7 +59,7 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
         if (entities.Count == 0)
             throw new NotFoundException();
 
-        var isDeletedProp = typeof(T).GetProperty("IsDeleted");
+        var isDeletedProp = typeof(T).GetProperty("isdeleted");
         if (isDeletedProp == null)
             throw new Exception("Entity does not contain IsDeleted property");
 
