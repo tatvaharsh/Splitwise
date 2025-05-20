@@ -34,6 +34,14 @@ export class GroupService {
     return this.http.post<IResponse<null>>(`${this.apiUrl}create`, formData);
   }
 
+  updateGroup(id:string,formData: FormData): Observable<IResponse<null>>{
+    return this.http.put<IResponse<null>>(`${this.apiUrl}update/${id}`, formData);
+  }
+
+  deleteGroup(id: string): Observable<IResponse<null>> {
+    return this.http.delete<IResponse<null>>(`${this.apiUrl}delete/${id}`);
+  }
+
   getGroups(): Observable<
     IResponse<Group[]>
   > {

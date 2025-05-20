@@ -1,6 +1,6 @@
 <div class="add-group-container">
     <mat-card class="group-card">
-      <h2 class="title">📝 Create New Group</h2>
+      <h2 class="title">{{ mode === 'edit' ? 'Update Group' : 'Create Group' }}</h2>
   
       <form [formGroup]="groupForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="fill" class="full-width">
@@ -27,7 +27,7 @@
   
         <div class="action-buttons">
           <button mat-stroked-button color="warn" type="button" (click)="onCancel()">Cancel</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="groupForm.invalid">Create Group</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="groupForm.invalid">Save</button>
         </div>
       </form>
     </mat-card>

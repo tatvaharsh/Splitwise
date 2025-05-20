@@ -11,9 +11,11 @@ using SplitWise.Service.Interface;
 namespace SplitWise.Service.Implementation;
 
 public class GroupService(IBaseRepository<Group> baseRepository,  IAppContextService appContextService, IActivityService activityService,
-IGroupMemberService groupMemberService) : BaseService<Group>(baseRepository), IGroupService
+IGroupMemberService groupMemberService, ApplicationContext applicationContext) : BaseService<Group>(baseRepository), IGroupService
 {
     private readonly IAppContextService _appContextService = appContextService;
+    private readonly ApplicationContext _applicationContext = applicationContext;
+
     private readonly IActivityService _activityService = activityService;
     private readonly IGroupMemberService _groupMemberService = groupMemberService;
 
@@ -64,11 +66,12 @@ IGroupMemberService groupMemberService) : BaseService<Group>(baseRepository), IG
                     .ThenInclude(m => m.Member));
         List<OnlyGroupResponse> groupResponses = groupEntities.Select(group => new OnlyGroupResponse
         {
-            Groupname = group.Groupname,
+            Id = group.Id,
+            Name = group.Groupname,
             Members = group.GroupMembers.Select(member => new MemberResponse
             {
-                Id = member.Id,
-                Name = member.Member.Username
+                Id = member.Memberid ?? new Guid(),
+                 Name = member.Memberid == userId ? "You" : member.Member.Username
             }).ToList(),
         }).ToList();
         return groupResponses;

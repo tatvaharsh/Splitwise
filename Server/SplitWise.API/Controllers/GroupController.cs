@@ -42,7 +42,7 @@ public class GroupController(IGroupService service, IMapper mapper, IAppContextS
         return SuccessResponse<object>(message: await _service.CreateGroupAsync(request));
     }
     
-    [HttpPut("update")]
+    [HttpPut("update/{id}")]
     public async Task<IActionResult> UpdateGroup([FromRoute] Guid id,[FromForm] GroupUpdateRequest request)
     {
         request.Id = id;
@@ -66,8 +66,8 @@ public class GroupController(IGroupService service, IMapper mapper, IAppContextS
         string baseURL = _appContextService.GetBaseURL();
         Group groupEntity = await _service.GetOneAsync(x => x.Id == id, query => query
         .Include(g => g.GroupMembers)
-        .ThenInclude(gm => gm.Member) 
-        ) ?? throw new Exception();;
+        .ThenInclude(m => m.Member)
+        ) ?? throw new Exception();
         GroupResponse groupResponse = new()
         {
                 Id = groupEntity.Id,

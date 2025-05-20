@@ -98,6 +98,7 @@
       width: 80px;
       font-size: 0.8rem;
       color: rgba(0, 0, 0, 0.6);
+      margin-right: 10px;
     }
     
     .expense-details {
@@ -247,4 +248,17 @@
     align-self: flex-center;
     margin-top: 8px;
   }
+  .text-green {
+    color: green;
+    font-weight: bold;
+  }
   
+  .text-red {
+    color: red;
+    font-weight: bold;
+  }
+
+  .text-gray {
+    color: gray;
+    font-weight: bold;
+  }

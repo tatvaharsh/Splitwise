@@ -1,7 +1,7 @@
 import { Component, type OnInit } from "@angular/core"
 import { type Observable, switchMap } from "rxjs"
 import type { Friend } from "../../models/friend.model"
-import type { Expense } from "../../models/expense.model"
+import type { Expense, Expenses } from "../../models/expense.model"
 import { AddExpenseComponent } from "../add-expense/add-expense.component"
 import { FriendService } from "../../services/friend.service"
 import { ExpenseService } from "../../services/expense.service"
@@ -29,7 +29,7 @@ import { MatMenuModule } from '@angular/material/menu';
 })
 export class FriendDetailComponent implements OnInit {
   friend$: Observable<Friend | undefined>
-  expenses$: Observable<Expense[]>
+  expenses$: Observable<Expenses[]>
   Math: any
 
   constructor(

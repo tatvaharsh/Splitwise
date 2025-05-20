@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 namespace SplitWise.Domain.Data;
 
 [Table("activity_splits")]
-[Index("Activityid", "Userid", Name = "activity_splits_activityid_userid_key", IsUnique = true)]
 public partial class ActivitySplit
 {
     [Key]

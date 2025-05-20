@@ -8,6 +8,7 @@ public class GetGroupsWithFriendsResponse
 
 public class OnlyGroupResponse
 {
-    public string Groupname { get; set; } = null!;
+    public Guid Id { get; set; }
+    public string Name { get; set; } = null!;
     public List<MemberResponse> Members { get; set; } = null!;
 }

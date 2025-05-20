@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SplitWise.Domain.Data;
 using SplitWise.Domain.DTO.Requests;
 using SplitWise.Domain.DTO.Response;
@@ -44,6 +45,50 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
     {
         command.Id = id;
         return SuccessResponse<object>(message: await _activityService.EditActivityAsync(command));
+    }
+
+    [HttpGet("get/{id}")]
+    public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
+    {
+        // Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid currentUserId = Guid.Parse(userIdString);
+        List<Activity> groupEntities = await _activityService.GetListAsync(x => x.Groupid == id && x.Paidbyid != null,
+            query => query
+                .Include(x => x.ActivitySplits)
+                .ThenInclude(x => x.User)
+            ) ?? throw new Exception();
+        List<GetExpenseByGroupId> groupResponses = groupEntities
+            .OrderByDescending(g => g.CreatedAt)
+            .Select(groupEntity =>
+            {
+                decimal owelentAmount;
+                if (groupEntity.Paidbyid == currentUserId)
+                {
+                    owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount) - groupEntity.ActivitySplits
+                    .Where(split => split.Userid == currentUserId).FirstOrDefault().Splitamount;
+                }
+                else
+                {
+                    owelentAmount = groupEntity.ActivitySplits
+                        .Where(split => split.Userid == currentUserId)
+                        .FirstOrDefault().Splitamount;
+                }
+
+                return new GetExpenseByGroupId
+                {
+                    Id = groupEntity.Id,
+                    Description = groupEntity.Description,
+                    PayerName = groupEntity.Paidbyid == currentUserId
+                        ? "You"
+                        : groupEntity.ActivitySplits
+                            .FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
+                    Amount = groupEntity.Amount,
+                    Date = groupEntity.Time,
+                    OweLentAmount = owelentAmount,
+                };
+            }).ToList();
+        return SuccessResponse(content: groupResponses);
     }
 
 }

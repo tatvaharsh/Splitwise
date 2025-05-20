@@ -1,14 +1,40 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
-import type { Expense } from "../models/expense.model"
+import type { Expense, ExpenseApiResponseContent, Expenses } from "../models/expense.model"
 import { UserService } from "./user.service"
 import { FriendService } from "./friend.service"
+import { HttpClient } from "@angular/common/http"
+import { IResponse } from "../generic/response"
+import { getExpensesByGroupId } from "../models/group.model"
 
 @Injectable({
   providedIn: "root",
 })
 export class ExpenseService {
-  private mockExpenses: Expense[] = [
+  private apiUrl = `http://localhost:5158/api/Expense/`;
+  constructor(
+    private http: HttpClient,
+    private userService: UserService,
+    private friendService: FriendService,
+  ) {}
+
+  FetchDropDownList(): Observable<
+    IResponse<ExpenseApiResponseContent>> {return this.http.get<IResponse<ExpenseApiResponseContent>>(
+      `${this.apiUrl}list`
+    );
+  }
+
+  saveExpense(Expense: Expense): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}create`, Expense);
+  }
+
+  getExpensesByGroupId(groupId: string): Observable<IResponse<getExpensesByGroupId[]>> {
+    return this.http.get<IResponse<getExpensesByGroupId[]>>(
+      `${this.apiUrl}get/${groupId}`
+    );
+  }
+
+  private mockExpenses: Expenses[] = [
     {
       id: "exp1",
       description: "Dinner at Taj",
@@ -89,24 +115,21 @@ export class ExpenseService {
     },
   ]
 
-  private expensesSubject = new BehaviorSubject<Expense[]>(this.mockExpenses)
-  expenses$: Observable<Expense[]> = this.expensesSubject.asObservable()
+  private expensesSubject = new BehaviorSubject<Expenses[]>(this.mockExpenses)
+  expenses$: Observable<Expenses[]> = this.expensesSubject.asObservable()
 
-  constructor(
-    private userService: UserService,
-    private friendService: FriendService,
-  ) {}
 
-  getExpenses(): Observable<Expense[]> {
+
+  getExpenses(): Observable<Expenses[]> {
     return this.expenses$
   }
 
-  getExpensesByGroupId(groupId: string): Observable<Expense[]> {
-    const expenses = this.mockExpenses.filter((e) => e.groupId === groupId)
-    return of(expenses)
-  }
+  // getExpensesByGroupId(groupId: string): Observable<Expenses[]> {
+  //   const expenses = this.mockExpenses.filter((e) => e.groupId === groupId)
+  //   return of(expenses)
+  // }
 
-  getExpensesByFriendId(friendId: string): Observable<Expense[]> {
+  getExpensesByFriendId(friendId: string): Observable<Expenses[]> {
     const currentUser = this.userService.getCurrentUser()
     const expenses = this.mockExpenses.filter(
       (e) =>
@@ -116,8 +139,8 @@ export class ExpenseService {
     return of(expenses)
   }
 
-  addExpense(expense: Omit<Expense, "id">): void {
-    const newExpense: Expense = {
+  addExpense(expense: Omit<Expenses, "id">): void {
+    const newExpense: Expenses = {
       ...expense,
       id: `exp${this.mockExpenses.length + 1}`,
     }

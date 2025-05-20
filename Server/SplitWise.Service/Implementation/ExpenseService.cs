@@ -9,9 +9,10 @@ public class ExpenseService(IBaseRepository<ActivitySplit> baseRepository) : Bas
     public async Task DeleteSplitsByActivityIdAsync(Guid activityId)
     {
         List<ActivitySplit> splits = await GetListAsync(x => x.Activityid == activityId) ?? throw new NotFoundException();
-        if (splits.Any())
+        foreach (var split in splits)
         {
-            DeleteRangeAsync(splits.Select(x => x.Id).ToList());
+            split.Isdeleted = true;
+            await UpdateAsync(split);
         }
     }
 

@@ -42,7 +42,7 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
         var entity = await _dbSet.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
         if (entity == null) throw new NotFoundException();
 
-        var prop = typeof(T).GetProperty("IsDeleted");
+        var prop = typeof(T).GetProperty("Isdeleted");
         if (prop == null) throw new Exception("Entity does not contain IsDeleted property");
 
         prop.SetValue(entity, true);
@@ -59,7 +59,7 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
         if (entities.Count == 0)
             throw new NotFoundException();
 
-        var isDeletedProp = typeof(T).GetProperty("isdeleted");
+        var isDeletedProp = typeof(T).GetProperty("Isdeleted");
         if (isDeletedProp == null)
             throw new Exception("Entity does not contain IsDeleted property");
 
@@ -76,8 +76,12 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
     // public IQueryable<T> GetAsync(Expression<Func<T, bool>> predicate) => _dbSet.Where(predicate).AsQueryable();
     public IQueryable<T> GetAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IQueryable<T>>? include = null)
     {
+        var isDeletedProp = typeof(T).GetProperty("Isdeleted");
         IQueryable<T> query = _dbSet;
-
+        if (isDeletedProp != null)
+        {
+            query = query.Where(e => EF.Property<bool>(e, "Isdeleted") == false);
+        }
         if (include != null)
         {
             query = include(query);
@@ -93,6 +97,13 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
     public IQueryable<T> GetAsync(Expression<Func<T, bool>>? predicate, params Expression<Func<T, object>>[] includes)
     {
         IQueryable<T> query = _dbSet;
+        query = includes.Aggregate(query, (current, include) => current.Include(include));
+
+        var isDeletedProp = typeof(T).GetProperty("Isdeleted");
+        if (isDeletedProp != null)
+        {
+            query = query.Where(e => EF.Property<bool>(e, "Isdeleted") == false);
+        }
         query = includes.Aggregate(query, (current, include) =>
         {
             return current.Include(include);

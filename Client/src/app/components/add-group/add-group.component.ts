@@ -1,6 +1,6 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, Inject, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
-import { MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { GroupService } from "../../services/group.service";
 import { UserService } from "../../services/user.service";
 import { ActivityService } from "../../services/activity.service";
@@ -38,14 +38,27 @@ export class AddGroupComponent implements OnInit {
     private groupService: GroupService,
     private userService: UserService,
     private activityService: ActivityService,
+    @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.groupForm = this.fb.group({
       name: ["", [Validators.required, Validators.minLength(2)]],
       image: [""],
     });
   }
+  mode: 'add' | 'edit' = 'add';
 
-  ngOnInit(): void {}
+
+  ngOnInit(): void {
+    if (this.data?.id) {
+      this.mode = 'edit';
+      this.groupForm.patchValue({
+        name: this.data.groupname
+      });
+      this.imagePreview = this.data.autoLogo || null;
+    }
+  }
+  
+  
 
   onFileSelected(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -60,8 +73,19 @@ export class AddGroupComponent implements OnInit {
   }
 
   onSubmit(): void {
+    const formData = new FormData();
+
     if (this.groupForm.valid){
-        const formData = new FormData();
+      if (this.data?.id) {
+        formData.append("Id", this.data.id); 
+        formData.append("GroupName", this.groupForm.get("name")?.value);
+        if (this.selectedFile) {
+          formData.append("AutoLogo", this.selectedFile);
+        }
+        this.groupService.updateGroup(this.data.id, formData).subscribe({
+          next: () => this.dialogRef.close()
+        });
+      }else{
         formData.append("GroupName", this.groupForm.get("name")?.value);
         if (this.selectedFile) {
           formData.append("AutoLogo", this.selectedFile);
@@ -74,6 +98,7 @@ export class AddGroupComponent implements OnInit {
             console.error("Error creating group:", error);
           }
         });
+      }
     }
     return;
   }
