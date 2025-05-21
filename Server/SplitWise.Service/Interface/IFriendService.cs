@@ -10,6 +10,8 @@ public interface IFriendService : IBaseService<FriendCollection>
     Task<bool> CheckOutstanding(Guid memberId, Guid groupId);
 
     Task<string> DeleteMemberFromGroup(Guid id, Guid groupId);
+    Task<List<FriendResponse>> GetAllListQuery();
+    Task<GetFriendresponse> GetFriendDetails(Guid id);
 
     Task<List<MemberResponse>> GetFriendsAsync();
     Task<List<MemberResponse>> GetFriendsDropdown(Guid groupId);

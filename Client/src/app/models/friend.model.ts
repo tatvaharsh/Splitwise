@@ -8,3 +8,27 @@ export interface Friend extends User {
     date: Date
   }
 }
+
+export interface FriendResponse {
+  id:string;
+  name: string;
+  lastActivityDescription:string;
+  oweLentAmount:number;
+}
+
+export interface GetExpenseByGroupId {
+  id: string;                     
+  description: string;
+  payerName: string;
+  amount?: number | null;
+  oweLentAmount?: number | null;
+  oweLentAmountOverall?: number | null;
+  date: Date;         
+}
+
+export interface GetFriendResponse {
+  id: string;                    
+  name: string;
+  expenses?: GetExpenseByGroupId[]; 
+  oweLentAmountOverall: number;
+}

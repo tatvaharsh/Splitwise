@@ -93,6 +93,168 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         return Domain.SplitWiseConstants.RECORD_DELETED;
     }
 
+    public async Task<List<FriendResponse>> GetAllListQuery()
+    {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+
+        var friendEntities = await GetListAsync(
+            x => x.Status == "accepted" && (x.Userid == userId || x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        );
+
+        var friendResponses = new List<FriendResponse>();
+
+        foreach (var friend in friendEntities)
+        {
+            var friendId = friend.Userid == userId ? friend.Friendid : friend.Userid;
+            var friendName = friend.Userid == userId ? friend.Friend.Username : friend.User.Username;
+
+            // Shared group check
+            var groupMembers = await _groupMemberService.GetListAsync(
+                x => x.Memberid == userId || x.Memberid == friendId
+            );
+
+            var sharedGroupIds = groupMembers
+                .GroupBy(x => x.Groupid)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            // Fetch related activities
+            var activities = await _activityService.GetListAsync(
+                x =>
+                    !x.Isdeleted &&
+                    (
+                        (x.Groupid != null && sharedGroupIds.Contains(x.Groupid.Value)) ||
+                        (x.Groupid == null && (
+                            (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+                            (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
+                        ))
+                    ),
+                query => query.Include(a => a.ActivitySplits)
+            );
+
+            decimal totalOweLent = 0;
+            Activity? lastActivity = null;
+
+            foreach (var activity in activities)
+            {
+                var userSplit = activity.ActivitySplits.FirstOrDefault(s => s.Userid == userId);
+                var friendSplit = activity.ActivitySplits.FirstOrDefault(s => s.Userid == friendId);
+                if (userSplit == null || friendSplit == null) continue;
+
+                decimal oweLent = 0;
+
+                if (activity.Paidbyid == userId)
+                    oweLent = friendSplit.Splitamount;
+                else if (activity.Paidbyid == friendId)
+                    oweLent = -userSplit.Splitamount;
+
+                totalOweLent += oweLent;
+
+                if (lastActivity == null || activity.CreatedAt > lastActivity.CreatedAt)
+                    lastActivity = activity;
+            }
+
+            friendResponses.Add(new FriendResponse
+            {
+                Id = (friend.Userid == userId ? friend.Friendid : friend.Userid )?? Guid.Empty,
+                Name = friendName,
+                LastActivityDescription = lastActivity?.Description,
+                OweLentAmount = totalOweLent
+            });
+        }
+        return friendResponses;
+    }
+
+    public async Task<GetFriendresponse> GetFriendDetails(Guid id)
+    {
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+
+        // Get friendship relation
+        var friendRelation = await GetOneAsync(
+            x => (x.Userid == userId && x.Friendid == id) || (x.Userid == id && x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        ) ?? throw new Exception("Friend not found");
+
+        // Get actual friend user (not current user)
+        var friendUser = friendRelation.Userid == userId ? friendRelation.Friend : friendRelation.User;
+
+        // Get direct 1-to-1 expenses
+        var directExpenses = await _activityService.GetListAsync(
+            x => !x.Isdeleted && x.Groupid == null &&
+            (
+                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
+            ),
+            query => query
+                .Include(a => a.ActivitySplits)
+                .Include(a => a.Paidby)
+        );
+
+        // Get group expenses (shared groups)
+        var groupMembers = await _groupMemberService.GetListAsync(
+            x => x.Memberid == userId || x.Memberid == id && x.Groupid != null,
+            query => query.Include(x => x.Group)
+        );
+
+        var commonGroupIds = groupMembers
+            .GroupBy(x => x.Groupid)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        var groupExpenses = await _activityService.GetListAsync(
+            x => !x.Isdeleted && x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) &&
+            (
+                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
+            ),
+            query => query
+                .Include(a => a.Group)
+                .Include(a => a.ActivitySplits)
+                .Include(a => a.Paidby)
+        );
+
+        var allExpenses = directExpenses.Concat(groupExpenses).OrderByDescending(a => a.CreatedAt).ToList();
+
+        var expenseList = allExpenses.Select(exp => new GetExpenseByGroupId
+        {
+            Id = exp.Id,
+            Description = exp.Group != null
+            ? (string.IsNullOrEmpty(exp.Description) ? exp.Group.Groupname : $"{exp.Group.Groupname} - {exp.Description}")
+            : exp.Description ?? "",
+            PayerName = exp.Paidbyid == userId ? "You" : exp.Paidby?.Username ?? "",
+            Amount = exp.Amount,
+            Date = exp.Time,
+            OweLentAmount = Math.Abs(
+                exp.Paidbyid == userId
+                    ? exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount)       // You paid, they owe
+                    : exp.Paidbyid == id
+                        ? -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount) // They paid, you owe
+                        : 0
+            ),
+            OweLentAmountOverall =  exp.Paidbyid == userId
+            ? exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount)
+            : exp.Paidbyid == id
+                ? -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount)
+                : 0
+
+        }).ToList();
+
+        var totalOweLent = expenseList.Sum(x => x.OweLentAmountOverall ?? 0);
+
+        return new GetFriendresponse
+        {
+            Id = friendUser.Id,
+            Name = friendUser.Username,
+            Expenses = expenseList,
+            OweLentAmountOverall = totalOweLent
+        };
+    }
 
     public async Task<List<MemberResponse>> GetFriendsAsync()
     {

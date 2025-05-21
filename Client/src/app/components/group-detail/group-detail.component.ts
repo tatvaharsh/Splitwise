@@ -7,7 +7,7 @@ import { AddGroupMemberComponent } from "../add-group-member/add-group-member.co
 import { SettleUpComponent } from "../settle-up/settle-up.component"
 import { Group1, GroupService } from "../../services/group.service"
 import { ExpenseService } from "../../services/expense.service"
-import { ActivatedRoute, Router } from "@angular/router"
+import { ActivatedRoute, Router, RouterModule } from "@angular/router"
 import { MatDialog } from "@angular/material/dialog"
 import { MatCardModule } from "@angular/material/card"
 import { MatIconModule } from "@angular/material/icon"
@@ -24,7 +24,7 @@ import { FriendService } from "../../services/friend.service"
 @Component({
   selector: "app-group-detail",
   templateUrl: "./group-detail.component.html",
-  imports: [MatCardModule, MatIconModule, CommonModule, MatTabsModule, MatButtonModule, MatMenuModule, DeleteConfirmationDialogComponent],
+  imports: [MatCardModule, MatIconModule, CommonModule, MatTabsModule, MatButtonModule, MatMenuModule, DeleteConfirmationDialogComponent, RouterModule],
   standalone: true,
   styleUrls: ["./group-detail.component.scss"],
 })

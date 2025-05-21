@@ -9,9 +9,12 @@ namespace SplitWise.API.Controllers;
 
 [ApiController]
 [Route("api/Friend")]
-public class FriendController(IFriendService friendService, IAppContextService appContextService) : BaseController
+public class FriendController(IFriendService friendService, IAppContextService appContextService, IActivityService activityService,
+IGroupMemberService groupMemberService) : BaseController
 {
     private readonly IFriendService _friendService = friendService;
+    private readonly IActivityService _activityService = activityService;
+    private readonly IGroupMemberService _groupMemberService = groupMemberService;
     private readonly IAppContextService _appContextService = appContextService;
 
     [HttpGet("get/{id}")]
@@ -41,21 +44,18 @@ public class FriendController(IFriendService friendService, IAppContextService a
         var hasOutstanding = await _friendService.CheckOutstanding(memberId, groupId);
         return Ok(hasOutstanding);
     }
+
     [HttpGet("GetList")]
     public async Task<IActionResult> GetList()
     {
-        List<FriendCollection> groupEntities = await _friendService.GetListAsync(x => true,
-                    query => query
-                            .Include(x => x.User));
-        List<GroupResponse> groupResponses = groupEntities.Select(group => new GroupResponse
-        {
-            Id = group.Id,
-            Groupname = group.Groupname,
-            AutoLogo = $"{baseURL}{group.AutoLogo}",
-            TotalMember = group.GroupMembers.Count
-        }).ToList();
-        return SuccessResponse(content: groupResponses);
+        List<FriendResponse> res = await _friendService.GetAllListQuery();
+        return SuccessResponse(content: res);
     }
 
-
+    [HttpGet("getfriend/{id}")]
+    public async Task<IActionResult> GetFriendById([FromRoute] Guid id)
+    {
+        GetFriendresponse getFriendresponse = await _friendService.GetFriendDetails(id);
+        return SuccessResponse(content: getFriendresponse);
+    }
 }

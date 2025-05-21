@@ -1,6 +1,6 @@
 import { Component, type OnInit } from "@angular/core"
 import type { Observable } from "rxjs"
-import type { Friend } from "../../models/friend.model"
+import type { Friend, FriendResponse } from "../../models/friend.model"
 import { AddFriendComponent } from "../add-friend/add-friend.component"
 import { FriendService } from "../../services/friend.service"
 import { Router } from "@angular/router"
@@ -17,17 +17,22 @@ import { CommonModule } from "@angular/common"
   styleUrls: ["./friends.component.scss"],
 })
 export class FriendsComponent implements OnInit {
-  friends$: Observable<Friend[]>
+  friends: FriendResponse[] = []
 
   constructor(
     private friendService: FriendService,
     private router: Router,
     private dialog: MatDialog,
   ) {
-    this.friends$ = this.friendService.getFriends()
+
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.friendService.getAllFriendDetail().subscribe((res) => {
+      this.friends = res.content;
+      console.log(this.friends);
+    });
+  }
 
   openFriend(friendId: string): void {
     this.router.navigate(["/friends", friendId])

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
-import type { Friend } from "../models/friend.model"
+import type { Friend, FriendResponse, GetFriendResponse } from "../models/friend.model"
 import { HttpClient } from "@angular/common/http";
 import { IResponse } from "../generic/response";
 import { Member } from "../models/expense.model";
@@ -29,10 +29,18 @@ export class FriendService {
   checkOutstanding(memberId: string, groupId: string): Observable<boolean> {
     return this.http.get<boolean>(`${this.apiUrl}check-outstanding?memberId=${memberId}&groupId=${groupId}`);
   }
+
+  getAllFriendDetail(): Observable<IResponse<FriendResponse[]>> {
+    return this.http.get<IResponse<FriendResponse[]>>(`${this.apiUrl}GetList`);
+  }
+
+  getFriendById(id: string): Observable<IResponse<GetFriendResponse>> {
+    return this.http.get<IResponse<GetFriendResponse>>(`${this.apiUrl}getfriend/${id}`);  
+  }
   
   private mockFriends: Friend[] = [
     {
-      id: "friend1",
+      id: "c6f98d57-d892-4690-a094-d2c930a6b414",
       name: "Jane Smith",
       email: "jane@example.com",
       phone: "+1987654321",
@@ -89,10 +97,10 @@ export class FriendService {
     return this.friends$
   }
 
-  getFriendById(id: string): Observable<Friend | undefined> {
-    const friend = this.mockFriends.find((f) => f.id === id)
-    return of(friend)
-  }
+  // getFriendById(id: string): Observable<Friend | undefined> {
+  //   const friend = this.mockFriends.find((f) => f.id === id)
+  //   return of(friend)
+  // }
 
   addFriend(friend: Omit<Friend, "id" | "balance">): void {
     const newFriend: Friend = {

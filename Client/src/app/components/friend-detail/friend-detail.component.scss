@@ -161,4 +161,60 @@
     bottom: 72px;
     z-index: 5;
   }
+  .text-green {
+    color: green;
+    font-weight: bold;
+  }
   
+  .text-red {
+    color: red;
+    font-weight: bold;
+  }
+
+  .text-gray {
+    color: gray;
+    font-weight: bold;
+  }
+
+  .settled {
+    background-color: #f0f0f0;
+    color: #555;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  .expense-date {
+    width: 80px;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.6);
+    margin-right: 10px;
+  }
+  .expense-card-content {
+    display: flex;
+    padding: 12px;
+    
+    .expense-date {
+      width: 80px;
+      font-size: 0.8rem;
+      color: rgba(0, 0, 0, 0.6);
+      margin-right: 10px;
+    }
+    
+    .expense-details {
+      flex: 1;
+      
+      .expense-description {
+        font-weight: 500;
+      }
+      
+      .expense-payer {
+        font-size: 0.9rem;
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+    
+    .expense-amount {
+      font-weight: 500;
+      align-self: center;
+    }
+  }
