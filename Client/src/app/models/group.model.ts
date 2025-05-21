@@ -18,4 +18,5 @@ export interface getExpensesByGroupId{
   date: Date;
   payerName:string;
   oweLentAmount:number;
+  oweLentAmountOverall:number;
 }

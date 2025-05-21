@@ -11,6 +11,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core'; // For native date adapter
 import { MatIconModule } from '@angular/material/icon'; // For matSuffix icon toggle
 import { CommonModule } from "@angular/common"
+import { Member } from "../../models/expense.model"
+import { Friend } from "../../models/friend.model"
+import { FriendService } from "../../services/friend.service"
 
 @Component({
   selector: "app-add-group-member",
@@ -21,7 +24,7 @@ import { CommonModule } from "@angular/common"
 })
 export class AddGroupMemberComponent implements OnInit {
   memberForm: FormGroup
-  availableUsers: User[] = []
+  availableUsers: Member[] = []
   groupId: string
   data: any
 
@@ -30,6 +33,8 @@ export class AddGroupMemberComponent implements OnInit {
     private dialogRef: MatDialogRef<AddGroupMemberComponent>,
     @Inject(MAT_DIALOG_DATA) data: any,
     private groupService: GroupService,
+    private friendService: FriendService,
+
     private activityService: ActivityService,
   ) {
     this.groupId = data.groupId
@@ -38,34 +43,33 @@ export class AddGroupMemberComponent implements OnInit {
     this.memberForm = this.fb.group({
       userId: ["", Validators.required],
     })
-
-    // Get available users (not already in the group)
-    // this.availableUsers = this.groupService.getAvailableUsers(this.groupId)
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.friendService.getAvailableUsers(this.groupId).subscribe({
+      next: (response) => {
+        this.availableUsers = response.content;
+      },
+      error: (err) => {
+        console.error('Failed to load users', err);
+      }
+    });
+  }
 
   onSubmit(): void {
-    if (this.memberForm.invalid) return
-
-    const formValue = this.memberForm.value
-    const selectedUser = this.availableUsers.find((u) => u.id === formValue.userId)
-
-    if (selectedUser) {
-      // Add member to group
-    //   this.groupService.addMemberToGroup(this.groupId, selectedUser)
-
-      // Add activity
-      this.activityService.addActivity({
-        type: "group",
-        description: `You added ${selectedUser.name} to the group`,
-        date: new Date(),
-        groupId: this.groupId,
-        icon: "person_add",
-      })
+    if (this.memberForm.valid){
+      const formValue = this.memberForm.value;
+      const selectedUser = this.availableUsers.find((u) => u.id === formValue.userId);
+    
+      if (selectedUser) {
+        this.friendService.addMemberToGroup(selectedUser.id, this.groupId).subscribe({
+          next: () => {
+            this.dialogRef.close();
+          }
+        });
+      }
     }
-
-    this.dialogRef.close()
+    return;
   }
 
   onCancel(): void {

@@ -37,10 +37,26 @@
     </div>
   
     <div class="group-balance-summary">
-      <div class="balance-card positive">
-        <span class="balance-label">You are owed</span>
-        <span class="balance-amount">₹500</span>
+      <div>
+        <div *ngIf="amount !== 0; else settled" 
+             class="balance-card" 
+             [ngClass]="{ 'positive': amount > 0, 'negative': amount < 0 }">
+          <span class="balance-label">
+            {{ amount > 0 ? 'You are owed' : 'You owe' }}
+          </span>
+          <span class="balance-amount">
+            ₹{{ getAbsoluteValue(amount) | number:'1.2-2' }}
+          </span>
+        </div>
+      
+        <ng-template #settled>
+          <div class="balance-card settled">
+            <span class="balance-label">Everything is settled up</span>
+          </div>
+        </ng-template>
       </div>
+      
+      
       <button mat-raised-button color="primary" (click)="openSettleUpDialog(group)">
         <mat-icon>payments</mat-icon>
         Settle Up
@@ -94,13 +110,13 @@
       
       <mat-tab label="Members">
         <div class="members-list-container">
-          <div class="members-list" *ngIf="group.members?.length; else noMembers">
+          <div class="members-list" *ngIf="group.members?.length;">
             <div class="member-item" *ngFor="let member of group.members">
               <div class="member-info">
                 <mat-icon class="member-avatar">person</mat-icon>
                 <span class="member-name">{{ member.name }}</span>
               </div>
-              <button mat-icon-button color="warn" (click)="removeMember(member.id)">
+              <button mat-icon-button color="warn" (click)="removeMember(member.id, group.id)">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
@@ -114,17 +130,7 @@
             </button>
           </div>
         </div>
-      
-        <ng-template #noMembers>
-          <div class="empty-state">
-            <mat-icon class="empty-icon">group</mat-icon>
-            <h2>No members yet</h2>
-            <button mat-raised-button color="primary" (click)="openAddMemberDialog(group)">
-              <mat-icon>person_add</mat-icon>
-              Add Member
-            </button>
-          </div>
-        </ng-template>
+    
       </mat-tab>
       
       
@@ -148,3 +154,11 @@
         (confirm)="deleteExpense()"
         (cancel)="cancelDelete()"
       ></app-delete-confirmation-dialog>
+
+      <!-- <app-delete-confirmation-dialog
+      [isVisible]="(dialogState$ | async)?.isVisible || false"
+      [title]="(dialogState$ | async)?.title || ''"
+      [message]="(dialogState$ | async)?.message || ''"
+      (confirm)="deleteMember()"
+      (cancel)="cancelDeleteMember()"
+    ></app-delete-confirmation-dialog> -->

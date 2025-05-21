@@ -76,7 +76,7 @@ public class GroupController(IGroupService service, IMapper mapper, IAppContextS
                 TotalMember = groupEntity.GroupMembers.Count,
                 Members = groupEntity.GroupMembers.Select(member => new MemberResponse
                 {
-                    Id =member.Id,
+                    Id =member.Member.Id,
                     Name = member.Member.Username,
                 }).ToList()
             };

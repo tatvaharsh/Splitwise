@@ -19,6 +19,8 @@ builder.Services.AddDbContext<ApplicationContext>(options =>
 
 // Repositories
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+builder.Services.AddScoped(typeof(IGroupMemberRepository), typeof(GroupMemberRepository));
+
 
 // Services
 builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));

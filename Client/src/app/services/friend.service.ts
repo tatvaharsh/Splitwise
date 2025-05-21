@@ -1,11 +1,35 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
 import type { Friend } from "../models/friend.model"
+import { HttpClient } from "@angular/common/http";
+import { IResponse } from "../generic/response";
+import { Member } from "../models/expense.model";
 
 @Injectable({
   providedIn: "root",
 })
 export class FriendService {
+  private apiUrl = `http://localhost:5158/api/Friend/`;
+  constructor(private http: HttpClient) { } 
+
+  getAvailableUsers(id:string): Observable<IResponse<Member[]>> {
+    return this.http.get<IResponse<Member[]>>(
+      `${this.apiUrl}get/${id}`
+    );
+  }
+
+  addMemberToGroup(userId: string, groupId: string): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}add/${userId}/${groupId}`, {});
+  }
+
+  deleteMember(id: string, GroupId:string): Observable<IResponse<null>> {
+    return this.http.delete<IResponse<null>>(`${this.apiUrl}delete/${id}/${GroupId}`);
+  }
+
+  checkOutstanding(memberId: string, groupId: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}check-outstanding?memberId=${memberId}&groupId=${groupId}`);
+  }
+  
   private mockFriends: Friend[] = [
     {
       id: "friend1",
@@ -60,8 +84,6 @@ export class FriendService {
 
   private friendsSubject = new BehaviorSubject<Friend[]>(this.mockFriends)
   friends$: Observable<Friend[]> = this.friendsSubject.asObservable()
-
-  constructor() {}
 
   getFriends(): Observable<Friend[]> {
     return this.friends$

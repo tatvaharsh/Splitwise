@@ -50,30 +50,36 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
     [HttpGet("get/{id}")]
     public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
     {
-        // Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid currentUserId = Guid.Parse(userIdString);
-        List<Activity> groupEntities = await _activityService.GetListAsync(x => x.Groupid == id && x.Paidbyid != null,
-            query => query
-                .Include(x => x.ActivitySplits)
-                .ThenInclude(x => x.User)
-            ) ?? throw new Exception();
-        List<GetExpenseByGroupId> groupResponses = groupEntities
+        Guid currentUserId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
+
+        List<Activity> groupEntities = await _activityService.GetListAsync(
+            x => x.Groupid == id && x.Paidbyid != null,
+            query => query.Include(x => x.ActivitySplits).ThenInclude(x => x.User)
+        ) ?? throw new Exception();
+
+        decimal totalOweLent = 0; // Total net lent or owed
+
+        var groupResponses = groupEntities
             .OrderByDescending(g => g.CreatedAt)
             .Select(groupEntity =>
             {
-                decimal owelentAmount;
+                decimal owelentAmount = 0;
+
                 if (groupEntity.Paidbyid == currentUserId)
                 {
-                    owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount) - groupEntity.ActivitySplits
-                    .Where(split => split.Userid == currentUserId).FirstOrDefault().Splitamount;
+                    // User paid, so they lent to others
+                    owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount)
+                        - groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
                 }
                 else
                 {
+                    // User owes their part
                     owelentAmount = groupEntity.ActivitySplits
-                        .Where(split => split.Userid == currentUserId)
-                        .FirstOrDefault().Splitamount;
+                        .FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
+                    owelentAmount *= -1; // Owed amount is negative
                 }
+
+                totalOweLent += owelentAmount;
 
                 return new GetExpenseByGroupId
                 {
@@ -81,14 +87,22 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
                     Description = groupEntity.Description,
                     PayerName = groupEntity.Paidbyid == currentUserId
                         ? "You"
-                        : groupEntity.ActivitySplits
-                            .FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
+                        : groupEntity.ActivitySplits.FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
                     Amount = groupEntity.Amount,
                     Date = groupEntity.Time,
-                    OweLentAmount = owelentAmount,
+                    OweLentAmount = Math.Abs(owelentAmount),
+                    OweLentAmountOverall = 0 
                 };
             }).ToList();
+
+        // Update OweLentAmountOverall for each item (optional)
+        foreach (var item in groupResponses)
+        {
+            item.OweLentAmountOverall = totalOweLent;
+        }
+
         return SuccessResponse(content: groupResponses);
     }
+
 
 }

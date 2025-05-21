@@ -7,6 +7,7 @@ public class GetExpenseByGroupId
     public string PayerName { get; set; } = null!;
     public decimal? Amount { get; set; }
     public decimal? OweLentAmount { get; set; }
+    public decimal? OweLentAmountOverall { get; set; }
     public DateTime? Date { get; set; }
 
 }

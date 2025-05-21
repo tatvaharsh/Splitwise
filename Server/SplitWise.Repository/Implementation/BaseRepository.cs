@@ -39,9 +39,10 @@ public class BaseRepository<T>(ApplicationContext context) : IBaseRepository<T> 
 
     public async Task<string> DeleteAsync(Guid id)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
-        if (entity == null) throw new NotFoundException();
+        var idProp = typeof(T).GetProperty("Id");
+        if (idProp == null) throw new Exception("Property 'Id' not found.");
 
+        var entity = (await _dbSet.ToListAsync()).FirstOrDefault(e => idProp.GetValue(e)?.Equals(id) == true);
         var prop = typeof(T).GetProperty("Isdeleted");
         if (prop == null) throw new Exception("Entity does not contain IsDeleted property");
 

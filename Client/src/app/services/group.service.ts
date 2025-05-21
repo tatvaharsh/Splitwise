@@ -5,6 +5,7 @@ import type { User } from '../models/user.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../generic/environment';
 import { IResponse } from '../generic/response';
+import { Member } from '../models/expense.model';
 
 
 
@@ -41,7 +42,7 @@ export class GroupService {
   deleteGroup(id: string): Observable<IResponse<null>> {
     return this.http.delete<IResponse<null>>(`${this.apiUrl}delete/${id}`);
   }
-
+  
   getGroups(): Observable<
     IResponse<Group[]>
   > {

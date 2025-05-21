@@ -6,3 +6,4 @@ export interface User {
     profilePic?: string
   }
   
+  

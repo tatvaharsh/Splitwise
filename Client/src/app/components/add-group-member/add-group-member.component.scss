@@ -1,5 +1,5 @@
 .add-member-container {
-    padding: 0 16px;
+    padding: 16px;
   }
   
   .form-row {
@@ -15,4 +15,8 @@
     justify-content: flex-end;
     padding: 8px 0 16px;
   }
-  
+  .action-buttons{
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }

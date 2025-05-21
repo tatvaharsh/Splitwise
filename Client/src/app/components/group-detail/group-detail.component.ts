@@ -19,6 +19,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { AddGroupComponent } from "../add-group/add-group.component"
 import { DeleteConfirmationDialogComponent } from "../../generic/delete-confirmation-dialog"
 import { DeleteConfirmationService } from "../../services/DeleteConfirmationService"
+import { FriendService } from "../../services/friend.service"
 
 @Component({
   selector: "app-group-detail",
@@ -32,12 +33,14 @@ export class GroupDetailComponent implements OnInit {
   group!: Group;
   expenses: getExpensesByGroupId[] = [];
   activeTab = 0
-  
+  amount: number = 0
+  memberId: string = '';
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private groupService: GroupService,
     private expenseService: ExpenseService,
+    private friendService: FriendService,
     private dialog: MatDialog,
     private deleteService: DeleteConfirmationService,
   ) {
@@ -54,6 +57,7 @@ export class GroupDetailComponent implements OnInit {
         })
       ).subscribe(response => {
         this.expenses = response.content;
+        this.amount = this.expenses[0].oweLentAmountOverall ?? 0;
       });
     }
 
@@ -91,21 +95,14 @@ export class GroupDetailComponent implements OnInit {
     })
   }
 
-  removeMember(memberId: string) {
-    if (confirm('Are you sure you want to remove this member?')) {
-    //   this.groupService.removeMemberFromGroup(this.group.id, memberId).subscribe({
-    //     next: (res) => {
-    //       // Remove member from local group.members array after successful API call
-    //       this.group.members = this.group.members?.filter(m => m.id !== memberId) || [];
-    //       this.group.totalMember = this.group.members.length;
-    //       this.snackBar.open('Member removed successfully', 'Close', { duration: 3000 });
-    //     },
-    //     error: (err) => {
-    //       console.error(err);
-    //       this.snackBar.open('Failed to remove member', 'Close', { duration: 3000 });
-    //     }
-    //   });
-    }
+  removeMember(memberId: string, groupId: string): void {
+    this.memberId = memberId;
+    this.deleteService.open({
+      title: 'Confirm Delete',
+      message: `Are you sure you want to delete this item?`
+    });
+
+    
   }
   editGroup(group: any): void {
     this.dialog.open(AddGroupComponent, {
@@ -123,15 +120,52 @@ export class GroupDetailComponent implements OnInit {
   }
 
   deleteExpense(): void {
-    this.groupService.deleteGroup(this.group.id).subscribe({
-      next: () => {
-        this.deleteService.close();
-        this.router.navigate(['/groups']);
-      }
-    });
+    if (this.group.id && this.memberId) {
+      this.friendService.checkOutstanding(this.memberId, this.group.id).subscribe({
+        next: (hasOutstanding) => {
+          if (!hasOutstanding) {
+            this.friendService.deleteMember(this.memberId, this.group.id).subscribe({
+              next: () => {
+                this.deleteService.close();
+                this.router.navigate(['/groups']);
+              }
+            });
+          } else {
+            alert('Cannot delete member. They have outstanding balances in this group.');
+            this.deleteService.close();
+          }
+        }
+      });
+    }
+    
+    else{
+      this.groupService.deleteGroup(this.group.id).subscribe({
+        next: () => {
+          this.deleteService.close();
+          this.router.navigate(['/groups']);
+        }
+      });
+    }
   }
 
   cancelDelete(): void {
     this.deleteService.close();
+  }
+
+  // deleteMember(): void {
+  //   this.friendService.deleteMember(this.memberId, this.group.id).subscribe({
+  //     next: () => {
+  //       this.deleteService.close();
+  //       this.router.navigate(['/groups']);
+  //     }
+  //   });
+  // }
+
+  // cancelDeleteMember(): void {
+  //   this.deleteService.close();
+  // }
+
+  getAbsoluteValue(amount: number): number {  
+    return Math.abs(amount);
   }
 }
