@@ -218,3 +218,36 @@
       align-self: center;
     }
   }
+  .expense-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .expense-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .expense-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .expense-details {
+    font-size: 14px;
+  }
+  
+  .text-green {
+    color: #4caf50;
+  }
+  
+  .text-red {
+    color: #f44336;
+  }
+  
+  .text-gray {
+    color: #9e9e9e;
+  }
+  

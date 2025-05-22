@@ -46,30 +46,46 @@
       <ng-container *ngIf="friend.expenses?.length; else noExpenses">
         <mat-card class="expense-card" *ngFor="let expense of friend.expenses">
           <div class="expense-card-content">
-            <div class="expense-date">
-              {{ formatDate(expense.date) }}
+            
+            <!-- Header with Date and Actions -->
+            <div class="expense-header">
+              <div class="expense-date">
+                {{ formatDate(expense.date) }}
+              </div>
+              <div class="expense-actions">
+                <button mat-icon-button color="primary" (click)="editExpense(expense.id)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteexpense(expense.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
+    
+            <!-- Expense Description and Amount -->
             <div class="expense-details">
               <div class="expense-description">{{ expense.description }}</div>
               <div class="expense-payer">
                 {{ expense.payerName }} paid ₹{{ expense.amount }}
               </div>
             </div>
-              <div 
-                class="expense-lending"
-                [ngClass]="{
-                  'text-green': expense.payerName == 'You'  && expense.oweLentAmount !== 0,
-                  'text-red': expense.payerName !== 'You' && expense.oweLentAmount !== 0,
-                  'text-gray': expense.oweLentAmount === 0
-                }">
-                {{ expense.oweLentAmount === 0 
-                    ? 'You are not involved' 
-                    : (expense.payerName === 'You' ? 'I lent' : 'I borrowed') + ' ₹' + expense.oweLentAmount }}
-              </div>
+    
+            <!-- Lending/Borrowing Status -->
+            <div 
+              class="expense-lending"
+              [ngClass]="{
+                'text-green': expense.payerName == 'You' && expense.oweLentAmount !== 0,
+                'text-red': expense.payerName !== 'You' && expense.oweLentAmount !== 0,
+                'text-gray': expense.oweLentAmount === 0
+              }">
+              {{ expense.oweLentAmount === 0 
+                  ? 'You are not involved' 
+                  : (expense.payerName === 'You' ? 'I lent' : 'I borrowed') + ' ₹' + expense.oweLentAmount }}
+            </div>
           </div>
         </mat-card>
       </ng-container>
-
+    
       <ng-template #noExpenses>
         <div class="empty-state">
           <mat-icon class="empty-icon">receipt_long</mat-icon>
@@ -81,7 +97,7 @@
           </button>
         </div>
       </ng-template>
-    </div>
+    </div>    
   </div>
 
   <button 
@@ -93,3 +109,11 @@
     <mat-icon>add</mat-icon>
   </button>
 </div>
+      <!-- Delete confirmation dialog -->
+      <app-delete-confirmation-dialog
+        [isVisible]="(dialogState$ | async)?.isVisible || false"
+        [title]="(dialogState$ | async)?.title || ''"
+        [message]="(dialogState$ | async)?.message || ''"
+        (confirm)="deleteExpense()"
+        (cancel)="cancelDelete()"
+      ></app-delete-confirmation-dialog>

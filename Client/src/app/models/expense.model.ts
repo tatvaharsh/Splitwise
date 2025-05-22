@@ -38,10 +38,26 @@ export interface Split {
 }
 
 export interface Expense {
+  id?:string;
   description: string;
   amount: number;
-  date: Date;
+  date: string;
   groupId: string|null; 
   paidById: string;
   splits: Split[];
+}
+
+export interface ActivitySplitRequest {
+  userId: string;
+  splitAmount: number;
+}
+
+export interface UpdateActivityRequest {
+  id: string;
+  description: string;
+  paidById: string;
+  groupId?: string | null;
+  amount: number;
+  date: Date; 
+  splits: ActivitySplitRequest[];
 }

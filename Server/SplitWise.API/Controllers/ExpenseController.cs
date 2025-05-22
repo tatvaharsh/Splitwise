@@ -47,6 +47,21 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
         return SuccessResponse<object>(message: await _activityService.EditActivityAsync(command));
     }
 
+    [HttpDelete("delete/{id:Guid}")]
+    public async Task<IActionResult> Delete([FromRoute] Guid id)
+    {
+        if (id == Guid.Empty)
+            return BadRequest("Invalid Group ID");
+        return SuccessResponse<object>(message: await _activityService.DeleteAsync(id));
+    }
+
+    [HttpGet("getbyexpenseid/{id:Guid}")]
+    public async Task<IActionResult> GetByExpenseId([FromRoute] Guid id)
+    {
+        var response = await _activityService.GetExpenseByIdAsync(id);
+        return SuccessResponse(content: response);
+    }
+
     [HttpGet("get/{id}")]
     public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
     {

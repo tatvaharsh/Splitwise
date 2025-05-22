@@ -23,7 +23,7 @@ export interface GetExpenseByGroupId {
   amount?: number | null;
   oweLentAmount?: number | null;
   oweLentAmountOverall?: number | null;
-  date: Date;         
+  date: string;         
 }
 
 export interface GetFriendResponse {

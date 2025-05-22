@@ -5,7 +5,7 @@ import type { Expense, Expenses } from "../../models/expense.model"
 import { AddExpenseComponent } from "../add-expense/add-expense.component"
 import { FriendService } from "../../services/friend.service"
 import { ExpenseService } from "../../services/expense.service"
-import { ActivatedRoute, RouterModule } from "@angular/router"
+import { ActivatedRoute, Router, RouterModule } from "@angular/router"
 import { MatDialog } from "@angular/material/dialog"
 import { SettleUpComponent } from "../settle-up/settle-up.component"
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,20 +26,23 @@ import { DeleteConfirmationService } from "../../services/DeleteConfirmationServ
   imports: [MatFormFieldModule, MatSelectModule, MatInputModule, MatDatepickerModule, MatNativeDateModule, MatIconModule, CommonModule ,MatCardModule, MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    RouterModule],
+    RouterModule,
+    DeleteConfirmationDialogComponent],
   standalone: true,
   styleUrls: ["./friend-detail.component.scss"],
 })
 export class FriendDetailComponent implements OnInit {
+  dialogState$ = this.deleteService.dialogState$;
   friend !: GetFriendResponse
   Math: any
-
+  expenseId: string = '';
   constructor(
     private route: ActivatedRoute,
     private friendService: FriendService,
     private expenseService: ExpenseService,
     private dialog: MatDialog,
-    
+    private deleteService: DeleteConfirmationService,
+    private router: Router,
   ) {
 
   }
@@ -93,11 +96,44 @@ export class FriendDetailComponent implements OnInit {
     }
   }
 
-  formatDate(date: Date): string {
+  formatDate(date: string): string {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     })
+  }
+
+  editExpense(id: string): void {
+    this.expenseService.getExpenseById(id).subscribe(expense => {
+      this.dialog.open(AddExpenseComponent, {
+        width: "500px",
+        maxWidth: "95vw",
+        panelClass: "expense-dialog",
+        data: {  expenseId: expense.content.id } // Pass data to the component
+      });
+    });
+  }
+  
+  
+  deleteexpense(id: string) {
+    this.expenseId = id;
+    this.deleteService.open({
+      title: 'Confirm Delete',
+      message: `Are you sure you want to delete this item?`
+    });
+  }
+
+  deleteExpense(): void {
+      this.expenseService.deleteExpense(this.expenseId).subscribe({
+        next: () => {
+          this.deleteService.close();
+          this.router.navigate(['/friends']);
+        } 
+      });
+  }
+
+  cancelDelete(): void {
+    this.deleteService.close();
   }
 }

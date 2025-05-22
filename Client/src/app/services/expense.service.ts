@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
-import type { Expense, ExpenseApiResponseContent, Expenses } from "../models/expense.model"
+import type { Expense, ExpenseApiResponseContent, Expenses, UpdateActivityRequest } from "../models/expense.model"
 import { UserService } from "./user.service"
 import { FriendService } from "./friend.service"
 import { HttpClient } from "@angular/common/http"
@@ -33,6 +33,20 @@ export class ExpenseService {
       `${this.apiUrl}get/${groupId}`
     );
   }
+
+  getExpenseById(id: string): Observable<IResponse<Expense>> {
+    return this.http.get<IResponse<Expense>>(
+      `${this.apiUrl}getbyexpenseid/${id}`
+    );
+  }
+  
+  updateExpense(id: string, expense: Expense): Observable<IResponse<null>> {
+    return this.http.put<IResponse<null>>(`${this.apiUrl}edit/${id}`, expense);
+  }
+  
+  deleteExpense(id: string): Observable<IResponse<null>> {
+    return this.http.delete<IResponse<null>>(`${this.apiUrl}delete/${id}`);
+  } 
 
   private mockExpenses: Expenses[] = [
     {

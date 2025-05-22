@@ -7,6 +7,7 @@
 
   <div class="expense-content">
     <!-- Step 1: Basic Info -->
+    <div *ngIf="expense">
     <div *ngIf="step === 1">
       <div class="form-group">
         <label>Description</label>
@@ -38,6 +39,7 @@
 
       <button (click)="goNext()">Next</button>
     </div>
+  </div>
 
     <!-- Step 2: Paid By -->
     <div *ngIf="step === 2">

@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Expense, Group, Member } from '../../models/expense.model';
 import { ExpenseService } from '../../services/expense.service';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-expense',
@@ -14,7 +14,8 @@ import { MatDialogRef } from '@angular/material/dialog';
 })
 export class AddExpenseComponent implements OnInit {
   constructor(private expenseService: ExpenseService,
-    private dialogRef: MatDialogRef<AddExpenseComponent>
+    private dialogRef: MatDialogRef<AddExpenseComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { expenseId?: string } 
   ) {}
 
   step = 1;
@@ -24,19 +25,57 @@ export class AddExpenseComponent implements OnInit {
   expense!: Expense;
   groupMembers: { id?: string; name: string }[] = [];
   remainingAmount: number = 0;
-
+  expenseDateString: string = '';
+  selectedType: 'group' | 'friend' | null = null;
   ngOnInit(): void {
+    this.FetchDropDownList();
+
+    if (this.data?.expenseId) {
+      this.loadExpense(this.data.expenseId);
+    } else {
+      this.initializeEmptyExpense();
+    }
+  }
+
+  initializeEmptyExpense(): void {
     this.expense = {
       description: '',
       amount: 0,
-      date: new Date(),
+      date: '',
       groupId: null,
       paidById: '',
       splits: []
     };
-
-    this.FetchDropDownList();
   }
+
+  loadExpense(expenseId: string): void {
+    this.expenseService.getExpenseById(expenseId).subscribe({
+      next: (res) => {
+        const data = res.content;
+
+        // Convert to 'yyyy-MM-dd' string
+        const dateObj = new Date(data.date);
+        const yyyy = dateObj.getFullYear();
+        const mm = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const dd = dateObj.getDate().toString().padStart(2, '0');
+        data.date = `${yyyy}-${mm}-${dd}`;  // string format
+        //todo 
+        if (!data.groupId) {
+          const otherMember = data.splits.find(
+            (s: any) => s.userId !== '78c89439-8cb5-4e93-8565-de9b7cf6c6ae'
+          );
+          if (otherMember) {
+            data.groupId = otherMember.userId; // Treat this as a friendId in UI
+          }
+        }
+      this.expense = data;
+  
+        this.calculateEqualSplit(); // or this.trackUnequalSplit();
+      },
+      error: (err) => console.error('Failed to load expense:', err)
+    });
+  }
+  
 
   FetchDropDownList(): void {
     this.expenseService.FetchDropDownList().subscribe({
@@ -146,11 +185,21 @@ export class AddExpenseComponent implements OnInit {
   }
 
   saveExpense(): void {
-    this.expenseService.saveExpense(this.expense).subscribe({
-      next: (response) => {
-        this.dialogRef.close(response); 
-      },
-      
-    });
+    if (this.expense.id) {
+      // Update existing expense
+      this.expenseService.updateExpense(this.expense.id,this.expense).subscribe({
+        next: (response) => {
+          this.dialogRef.close(response);
+        }
+      });
+    } else {
+      this.expenseService.saveExpense(this.expense).subscribe({
+        next: (response) => {
+          this.dialogRef.close(response);
+        },
+        error: (err) => console.error('Failed to save expense:', err)
+      });
+    }
   }
+  
 }

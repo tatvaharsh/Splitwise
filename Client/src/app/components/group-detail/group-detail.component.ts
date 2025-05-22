@@ -35,6 +35,8 @@ export class GroupDetailComponent implements OnInit {
   activeTab = 0
   amount: number = 0
   memberId: string = '';
+  expenseId: string = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -120,6 +122,15 @@ export class GroupDetailComponent implements OnInit {
   }
 
   deleteExpense(): void {
+    if(this.expenseId){
+      this.expenseService.deleteExpense(this.expenseId).subscribe({
+        next: () => {
+          this.deleteService.close();
+          this.router.navigate(['/groups']);
+        } 
+      });
+      return;
+    }
     if (this.group.id && this.memberId) {
       this.friendService.checkOutstanding(this.memberId, this.group.id).subscribe({
         next: (hasOutstanding) => {
@@ -137,7 +148,6 @@ export class GroupDetailComponent implements OnInit {
         }
       });
     }
-    
     else{
       this.groupService.deleteGroup(this.group.id).subscribe({
         next: () => {
@@ -152,20 +162,27 @@ export class GroupDetailComponent implements OnInit {
     this.deleteService.close();
   }
 
-  // deleteMember(): void {
-  //   this.friendService.deleteMember(this.memberId, this.group.id).subscribe({
-  //     next: () => {
-  //       this.deleteService.close();
-  //       this.router.navigate(['/groups']);
-  //     }
-  //   });
-  // }
-
-  // cancelDeleteMember(): void {
-  //   this.deleteService.close();
-  // }
-
   getAbsoluteValue(amount: number): number {  
     return Math.abs(amount);
+  }
+
+  editExpense(id: string): void {
+    this.expenseService.getExpenseById(id).subscribe(expense => {
+      this.dialog.open(AddExpenseComponent, {
+        width: "500px",
+        maxWidth: "95vw",
+        panelClass: "expense-dialog",
+        data: {  expenseId: expense.content.id } // Pass data to the component
+      });
+    });
+  }
+  
+  
+  deleteexpense(id: string) {
+    this.expenseId = id;
+    this.deleteService.open({
+      title: 'Confirm Delete',
+      message: `Are you sure you want to delete this item?`
+    });
   }
 }
