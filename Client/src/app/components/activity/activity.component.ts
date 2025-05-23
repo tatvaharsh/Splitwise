@@ -1,6 +1,6 @@
 import { Component, type OnInit } from "@angular/core"
 import type { Observable } from "rxjs"
-import type { Activity } from "../../models/activity.model"
+import type { Activities, Activity } from "../../models/activity.model"
 import { ActivityService } from "../../services/activity.service"
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,13 +13,16 @@ import { CommonModule } from "@angular/common";
   styleUrls: ["./activity.component.scss"],
 })
 export class ActivityComponent implements OnInit {
-  activities$: Observable<Activity[]>
+  activities : Activities[] = []
 
   constructor(private activityService: ActivityService) {
-    this.activities$ = this.activityService.getActivities()
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.activityService.getActivities().subscribe((res) => {
+      this.activities = res.content
+    })
+  }
 
   formatDate(date: Date): string {
     return new Date(date).toLocaleDateString("en-US", {

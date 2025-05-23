@@ -11,3 +11,9 @@ export interface Activity {
     icon?: string
   }
   
+  export interface Activities {
+    id: string
+    userId: string;
+    description: string
+    createdAt: Date
+  }

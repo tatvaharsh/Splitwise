@@ -11,11 +11,12 @@ namespace SplitWise.API.Controllers;
 
 [ApiController]
 [Route("api/Expense")]
-public class ExpenseController(IActivityService activityService, IExpenseService expenseService, IGroupService groupService,
+public class ExpenseController(IActivityService activityService, IExpenseService expenseService, IGroupService groupService, IActivityLoggerService activityLoggerService,
 IFriendService friendService, IAppContextService appContextService) : BaseController
 {
     private readonly IActivityService _activityService = activityService;
     private readonly IFriendService _friendService = friendService;
+    private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     private readonly IGroupService _groupService = groupService;
     private readonly IExpenseService _expenseService = expenseService;
     private readonly IAppContextService _appContextService = appContextService;
@@ -50,8 +51,47 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
     [HttpDelete("delete/{id:Guid}")]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
         if (id == Guid.Empty)
             return BadRequest("Invalid Group ID");
+        
+        var activity = await _activityService.GetByIdAsync(id);
+        var splits = await _activityService.GetOneAsync(x => x.Id == id, query => query.Include(x => x.ActivitySplits)); 
+
+        string groupName = "";
+        if (activity.Groupid.HasValue)
+        {
+            var group = await _groupService.GetByIdAsync(activity.Groupid.Value);
+            groupName = group?.Groupname ?? "";
+        }
+
+        // Log for payer
+        string payerMessage = activity.Groupid != null
+            ? $"You deleted the expense '{activity.Description}' in group '{groupName}'"
+            : $"You deleted the expense '{activity.Description}'";
+        if (activity.Paidbyid.HasValue)
+        {
+            await _activityLoggerService.LogAsync(activity.Paidbyid.Value, payerMessage);
+        }
+
+        // Log for other participants (if group or individual split)
+        foreach (var split in splits.ActivitySplits)
+        {
+            if (split.Userid != activity.Paidbyid)
+            {
+                string userMessage = activity.Groupid != null
+                    ? $"The expense '{activity.Description}' was deleted in group '{groupName}'"
+                    : $"The expense '{activity.Description}' was deleted";
+
+                if (split.Userid.HasValue)
+                {
+                    await _activityLoggerService.LogAsync(split.Userid.Value, userMessage);
+                }
+            }
+        }
+
         return SuccessResponse<object>(message: await _activityService.DeleteAsync(id));
     }
 

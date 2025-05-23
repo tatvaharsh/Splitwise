@@ -10,13 +10,12 @@ using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class GroupService(IBaseRepository<Group> baseRepository,  IAppContextService appContextService, IActivityService activityService,
-IGroupMemberService groupMemberService, ApplicationContext applicationContext) : BaseService<Group>(baseRepository), IGroupService
+public class GroupService(IBaseRepository<Group> baseRepository,  IAppContextService appContextService,
+IGroupMemberService groupMemberService, ApplicationContext applicationContext, IActivityLoggerService activityLoggerService) : BaseService<Group>(baseRepository), IGroupService
 {
     private readonly IAppContextService _appContextService = appContextService;
+    private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     private readonly ApplicationContext _applicationContext = applicationContext;
-
-    private readonly IActivityService _activityService = activityService;
     private readonly IGroupMemberService _groupMemberService = groupMemberService;
 
     public async Task<string> CreateGroupAsync(GroupRequest request)
@@ -44,14 +43,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext) :
         };
         await _groupMemberService.AddAsync(groupMember);
 
-        Activity activityEntity = new()
-        {
-            Description = $"You created the group '{groupEntity.Groupname}'",
-            Groupid = groupEntity.Id,  
-            UserInvolvement = false, 
-            CreatedAt = DateTime.UtcNow,
-        };
-        await _activityService.AddAsync(activityEntity);
+        await _activityLoggerService.LogAsync(userId, $"You created the group '{groupEntity.Groupname}'");
         return SplitWiseConstants.RECORD_CREATED;
     }
 
@@ -80,6 +72,9 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext) :
 
     public async Task<string> UpdateGroupAsync(GroupUpdateRequest request)
     {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
         Group groupEntity = await GetOneAsync(x=>x.Id == request.Id) ?? throw new NotFoundException();
 
         groupEntity.Groupname = request.GroupName;
@@ -90,14 +85,28 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext) :
         }
         groupEntity.UpdatedAt = DateTime.UtcNow;
         await UpdateAsync(groupEntity);
-        // Activity activityEntity = new()
-        // {
-        //     Description = $"You updated the group '{groupEntity.Groupname}'",
-        //     Groupid = groupEntity.Id,  
-        //     UserInvolvement = false, 
-        //     CreatedAt = DateTime.UtcNow,
-        // };
-        // await _activityService.AddAsync(activityEntity);
+        await _activityLoggerService.LogAsync(userId, $"You updated the group '{groupEntity.Groupname}'");
+
+        // Get all members of the group (including the updater)
+        var groupMembers = await GetOneAsync(
+            gm => gm.Id == request.Id,
+            query => query.Include(x=>x.GroupMembers) // optional if you want user details
+        );
+
+        // Log for all members about the update
+        foreach (var member in groupMembers.GroupMembers)
+        {
+            if (member.Memberid.HasValue)
+            {
+                if (member.Memberid.Value != userId)
+                {
+                    await _activityLoggerService.LogAsync(
+                        member.Memberid.Value,
+                        $"The group '{groupEntity.Groupname}' has been updated."
+                    );
+                }
+            }
+        }
         return SplitWiseConstants.RECORD_UPDATED;
     }
 

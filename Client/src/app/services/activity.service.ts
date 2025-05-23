@@ -1,11 +1,22 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable } from "rxjs"
-import type { Activity } from "../models/activity.model"
+import type { Activities, Activity } from "../models/activity.model"
+import { HttpClient } from "@angular/common/http";
+import { IResponse } from "../generic/response";
 
 @Injectable({
   providedIn: "root",
 })
 export class ActivityService {
+  private apiUrl = `http://localhost:5158/api/Activity/`;
+  constructor(
+    private http: HttpClient,
+  ) {}
+
+  getActivities(): Observable<IResponse<Activities[]>> {
+    return this.http.get<IResponse<Activities[]>>(`${this.apiUrl}list`);
+  }
+
   private mockActivities: Activity[] = [
     {
       id: "act1",
@@ -70,11 +81,9 @@ export class ActivityService {
   private activitiesSubject = new BehaviorSubject<Activity[]>(this.mockActivities)
   activities$: Observable<Activity[]> = this.activitiesSubject.asObservable()
 
-  constructor() {}
-
-  getActivities(): Observable<Activity[]> {
-    return this.activities$
-  }
+  // getActivities(): Observable<Activity[]> {
+  //   return this.activities$
+  // }
 
   addActivity(activity: Omit<Activity, "id">): void {
     const newActivity: Activity = {

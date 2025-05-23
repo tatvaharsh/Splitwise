@@ -10,7 +10,6 @@ public interface IActivityService : IBaseService<Activity>
     Task<string> CreateActivityAsync(CreateActivityRequest request);
     Task<string> EditActivityAsync(UpdateActivityRequest command);
     Task<UpdateActivityRequest> GetExpenseByIdAsync(Guid id);
-
     Task<List<ActivityResponse>> GetAllListQuery();
 
 }

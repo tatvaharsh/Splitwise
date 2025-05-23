@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 namespace SplitWise.Domain.Data;
 
 [Table("group_members")]
-[Index("Groupid", "Memberid", Name = "group_members_groupid_memberid_key", IsUnique = true)]
 public partial class GroupMember
 {
     [Key]

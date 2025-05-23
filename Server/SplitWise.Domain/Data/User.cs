@@ -43,6 +43,9 @@ public partial class User
     public virtual ICollection<Activity> Activities { get; set; } = new List<Activity>();
 
     [InverseProperty("User")]
+    public virtual ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
+
+    [InverseProperty("User")]
     public virtual ICollection<ActivitySplit> ActivitySplits { get; set; } = new List<ActivitySplit>();
 
     [InverseProperty("Friend")]

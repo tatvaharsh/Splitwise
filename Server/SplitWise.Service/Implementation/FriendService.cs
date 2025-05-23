@@ -1,21 +1,85 @@
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using SplitWise.Domain;
 using SplitWise.Domain.Data;
+using SplitWise.Domain.DTO.Requests;
 using SplitWise.Domain.DTO.Response;
+using SplitWise.Domain.Generic.Helper;
 using SplitWise.Repository.Interface;
 using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class FriendService(IBaseRepository<FriendCollection> baseRepository, IActivityService activityService,
- IGroupMemberService groupMemberService, IGroupMemberRepository groupMemberRepository) : BaseService<FriendCollection>(baseRepository), IFriendService
+public class FriendService(IBaseRepository<FriendCollection> baseRepository, IActivityService activityService,IGroupService groupService, IUserService userService, IEmailService emailService,
+ IGroupMemberService groupMemberService, IGroupMemberRepository groupMemberRepository, IActivityLoggerService activityLoggerService) : BaseService<FriendCollection>(baseRepository), IFriendService
 {
     private readonly IGroupMemberService _groupMemberService = groupMemberService;
+    private readonly IEmailService _emailService = emailService;
+    private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
+    private readonly IUserService _userService = userService;
     private readonly IGroupMemberRepository _groupMemberRepository = groupMemberRepository;
+    private readonly IGroupService _groupService = groupService;
     private readonly IActivityService _activityService = activityService;
-    
+
+    public async Task<string> AddFriendAsync(AddFriend friend)
+    {
+        // Simulate logged-in user (replace with _appContextService.GetUserId() in real app)
+        var userId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
+
+        // Check if email is already registered
+        var existingUser = await _userService.GetOneAsync(x => x.Email == friend.Email);
+        var loggedInUser = await _userService.GetOneAsync(x => x.Id == userId);
+        if (existingUser != null)
+        {
+            // Already a user, add to friend collection
+            bool alreadyFriend = await GetOneAsync(
+                x => (x.Userid == userId && x.Friendid == existingUser.Id) || (x.Userid == existingUser.Id && x.Friendid == userId),
+                query => query.Include(x => x.User).Include(x => x.Friend)
+            ) != null;
+            if (alreadyFriend)
+            {
+                return "You are already connected or have a pending request.";
+            }
+
+            var friendEntity = new FriendCollection
+            {
+                Userid = userId,
+                Friendid = existingUser.Id,
+                Status = "pending",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await AddAsync(friendEntity);
+            return SplitWiseConstants.RECORD_CREATED;
+        }
+        else
+        {
+            string subject = string.Format(SplitWiseConstants.INVITATION);
+            var path = Path.Combine(Directory.GetCurrentDirectory(), @"..\","SplitWise.Domain", "Generic", "Templates", "InviteFriend.html");
+
+            string htmlBody = await FileHelper.ReadFileFromPath(path);
+            htmlBody = htmlBody.Replace("{{FriendName}}", loggedInUser.Username);
+
+            await _emailService.SendEmailAsync([friend.Email], subject, htmlBody);
+        }
+        return SplitWiseConstants.RECORD_CREATED;
+    }
+
+
     public async Task<string> AddFriendIntoGroup(Guid friendId, Guid groupId)
     {
+        string groupName = string.Empty;
+
+        var group = await _groupService.GetByIdAsync(groupId);
+        if (group != null)
+        {
+            groupName = group.Groupname;
+        }
+        
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
         var result = await GetOneAsync(
             x => x.Friendid == friendId || x.Userid == friendId,
             query => query
@@ -31,14 +95,8 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
             JoinedAt = DateTime.UtcNow
         };
         await _groupMemberService.AddAsync(groupMember);
-        Activity activityEntity = new()
-        {
-            Description = $"You added '{result.Friend.Username}' to the group '{result.User.Groups.FirstOrDefault().Groupname}'",
-            Groupid = groupId,
-            UserInvolvement = false,
-            CreatedAt = DateTime.UtcNow,
-        };
-        await _activityService.AddAsync(activityEntity);
+
+        await _activityLoggerService.LogAsync(userId, $"You added '{result.Friend.Username}' to the group '{groupName}'");
         return Domain.SplitWiseConstants.RECORD_CREATED;
     }
 
@@ -79,17 +137,35 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
 
     public async Task<string> DeleteMemberFromGroup(Guid id, Guid groupid)
     {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+
+        User user = await _userService.GetOneAsync(x => x.Id == userId) ?? throw new Exception("User not found");
+
         GroupMember groupMember = await _groupMemberService.GetOneAsync(x => x.Memberid == id && x.Groupid == groupid, query => query.Include(x => x.Member)
         .Include(x=>x.Group)) ?? throw new Exception();
         await _groupMemberRepository.DeleteMember(id, groupid);
-        Activity activityEntity = new()
+
+        await _activityLoggerService.LogAsync(userId,
+            $"You removed '{groupMember.Member.Username}' from the group '{groupMember.Group.Groupname}'");
+
+        await _activityLoggerService.LogAsync(id,
+            $"{user.Username} removed you from the group '{groupMember.Group.Groupname}'");
+
+        var remainingMembers = await _groupMemberService.GetListAsync(
+            gm => gm.Groupid == groupid
+        );
+
+        foreach (var member in remainingMembers)
         {
-            Description = $"You removed '{groupMember.Member.Username}' from the group '{groupMember.Group.Groupname}'",
-            Groupid = groupMember.Groupid,
-            UserInvolvement = false,
-            CreatedAt = DateTime.UtcNow,
-        };
-        await _activityService.AddAsync(activityEntity);
+            if (member.Memberid.HasValue && member.Memberid.Value != userId && member.Memberid.Value != id)
+            {
+                await _activityLoggerService.LogAsync(member.Memberid.Value,
+                    $"'{groupMember.Member.Username}' was removed from the group '{groupMember.Group.Groupname}'.");
+            }
+        }
+
         return Domain.SplitWiseConstants.RECORD_DELETED;
     }
 
@@ -126,13 +202,25 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
             var activities = await _activityService.GetListAsync(
                 x =>
                     !x.Isdeleted &&
-                    (
-                        (x.Groupid != null && sharedGroupIds.Contains(x.Groupid.Value)) ||
-                        (x.Groupid == null && (
+                        (
+                            //  Group activity: user and friend must both be participants
+                            (x.Groupid != null &&
+                            x.ActivitySplits.Any(s => s.Userid == userId) &&
+                            x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+
+                            //  Non-group expense: direct involvement
+                            (x.Groupid == null && (
+                                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+                                (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
+                            ))
+                        ) &&
+                        //  Filter out where one of them is payer and the other is in splits
+                        (
                             (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
-                            (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
-                        ))
-                    ),
+                            (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId)) ||
+                            (x.Paidbyid == friendId && friendId == userId) || // user paid and is in splits
+                            (x.Paidbyid == userId && friendId == userId)
+                        ),
                 query => query.Include(a => a.ActivitySplits)
             );
 

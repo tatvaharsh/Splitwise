@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SplitWise.Domain.Data;
+using SplitWise.Domain.DTO.Requests;
 using SplitWise.Domain.DTO.Response;
 using SplitWise.Service;
 using SplitWise.Service.Interface;
@@ -9,13 +10,9 @@ namespace SplitWise.API.Controllers;
 
 [ApiController]
 [Route("api/Friend")]
-public class FriendController(IFriendService friendService, IAppContextService appContextService, IActivityService activityService,
-IGroupMemberService groupMemberService) : BaseController
+public class FriendController(IFriendService friendService) : BaseController
 {
     private readonly IFriendService _friendService = friendService;
-    private readonly IActivityService _activityService = activityService;
-    private readonly IGroupMemberService _groupMemberService = groupMemberService;
-    private readonly IAppContextService _appContextService = appContextService;
 
     [HttpGet("get/{id}")]
     public async Task<IActionResult> Get([FromRoute] Guid id)
@@ -58,4 +55,14 @@ IGroupMemberService groupMemberService) : BaseController
         GetFriendresponse getFriendresponse = await _friendService.GetFriendDetails(id);
         return SuccessResponse(content: getFriendresponse);
     }
+
+    [HttpPost("add")]
+    public async Task<IActionResult> AddFriend([FromBody] AddFriend friend)
+    {
+        if (friend == null || string.IsNullOrWhiteSpace(friend.Name))
+            return BadRequest("Invalid Friend data");
+
+        return SuccessResponse<object>(message: await _friendService.AddFriendAsync(friend));
+    }
+
 }

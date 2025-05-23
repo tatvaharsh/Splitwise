@@ -10,9 +10,10 @@ namespace SplitWise.API.Controllers;
 
 [ApiController]
 [Route("api/Group")]
-public class GroupController(IGroupService service, IMapper mapper, IAppContextService appContextService) : BaseController
+public class GroupController(IGroupService service, IMapper mapper, IAppContextService appContextService, IActivityLoggerService activityLoggerService) : BaseController
 {
     private readonly IGroupService _service = service;
+    private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     private readonly IMapper _mapper = mapper;
     private readonly IAppContextService _appContextService = appContextService;
 
@@ -57,6 +58,22 @@ public class GroupController(IGroupService service, IMapper mapper, IAppContextS
     {
         if (id == Guid.Empty)
             return BadRequest("Invalid Group ID");
+            
+        var groupMembers = await _service.GetOneAsync(gm => gm.Id == id, query => query
+            .Include(g => g.GroupMembers)
+            .ThenInclude(m => m.Member)
+        ) ?? throw new Exception();
+
+        foreach (var member in groupMembers.GroupMembers)
+        {
+            if (member.Memberid.HasValue)
+            {
+                await _activityLoggerService.LogAsync(
+                    member.Memberid.Value,
+                    $"The group '{member.Group.Groupname}' has been deleted."
+                );
+            }
+        }
         return SuccessResponse<object>(message: await _service.DeleteAsync(id));
     }
 

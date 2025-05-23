@@ -84,7 +84,9 @@ public class SplitWiseConstants
     public const string RESET_PASS_EMAIL_TEMPLATE = "ResetPasswordEmailTemplate.html";
     public const string PERMIT_REMINDER_EMAIL_TEMPLATE = "PermitReminderEmailTemplate.html";
     public const string PROFILE_APPROVE_REJECT_SUBJECT = "Your profile has been {0} | IAS system";
+    public const string INVITATION = "Invitation | SpliwtWise";
     public const string PROFILE_APPROVE_REJECT_EMAIL_TEMPLATE = "ProfileApproveRejectEmailTemplate.html";
+    public const string INVITE_FRIEND = "InviteFriend.html";
     public const string SYS_GEN_PASS_EMAIL_TEMPLATE = "SystemGeneratedPassword.html";
     public const string PERMIT_INSPECTION_FINALIZED_TEMPLATE = "PermitInspectionFinalizedTemplate.html";
 

@@ -17,6 +17,8 @@ public partial class ApplicationContext : DbContext
 
     public virtual DbSet<Activity> Activities { get; set; }
 
+    public virtual DbSet<ActivityLog> ActivityLogs { get; set; }
+
     public virtual DbSet<ActivitySplit> ActivitySplits { get; set; }
 
     public virtual DbSet<ExpenseLogo> ExpenseLogos { get; set; }
@@ -65,6 +67,18 @@ public partial class ApplicationContext : DbContext
             entity.HasOne(d => d.Paidby).WithMany(p => p.Activities)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("activities_paidbyid_fkey");
+        });
+
+        modelBuilder.Entity<ActivityLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("activity_log_pkey");
+
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+
+            entity.HasOne(d => d.User).WithMany(p => p.ActivityLogs)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("activity_log_user_id_fkey");
         });
 
         modelBuilder.Entity<ActivitySplit>(entity =>
@@ -210,7 +224,7 @@ public partial class ApplicationContext : DbContext
         });
 
         OnModelCreatingPartial(modelBuilder);
-        OnModelCreatingPartialCustom(modelBuilder);  
+        OnModelCreatingPartialCustom(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

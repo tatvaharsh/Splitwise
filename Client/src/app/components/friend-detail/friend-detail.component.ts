@@ -48,12 +48,9 @@ export class FriendDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log("ngOnInit called");
     this.route.paramMap.subscribe(params => {
-      console.log("Inside paramMap subscription");
       const friendId = params.get("id") || "";
       this.friendService.getFriendById(friendId).subscribe(response => {
-        console.log("Friend data received", response);
         this.friend = response.content;
       });
     });

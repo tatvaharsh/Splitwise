@@ -9,11 +9,24 @@ using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService) : BaseService<Activity>(baseRepository), IActivityService
+public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService,
+IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseRepository), IActivityService
 {
     private readonly IExpenseService _expenseService = expenseService;
+    private readonly IGroupService _groupService = groupService;
+    private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     public async Task<string> CreateActivityAsync(CreateActivityRequest request)
     {
+        string groupName = string.Empty;
+
+        if (request.GroupId != null)
+        {
+            var group = await _groupService.GetByIdAsync(request.GroupId.Value);
+            if (group != null)
+            {
+                groupName = group.Groupname;
+            }
+        }
         Activity activity = new()
         {
             Description = request.Description,
@@ -32,11 +45,37 @@ public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseS
         }).ToList();
 
         await _expenseService.AddRangeAsync(splits);
+
+        await _activityLoggerService.LogAsync(request.PaidById, $"You paid ₹{request.Amount} for {request.Description}" +
+            (request.GroupId != null ? $" in {groupName}" : ""));
+
+            // Log for each participant (excluding the payer)
+        foreach (var split in request.Splits)
+        {
+            if (split.UserId != request.PaidById)
+            {
+                await _activityLoggerService.LogAsync(
+                    split.UserId,
+                    $"You owe ₹{split.SplitAmount} for '{request.Description}'" +
+                    (request.GroupId != null ? $" in group {groupName}" : "")
+                );
+            }
+        }
         return SplitWiseConstants.RECORD_CREATED;
     }
 
     public async Task<string> EditActivityAsync(UpdateActivityRequest request)
     {
+        string groupName = string.Empty;
+
+        if (request.GroupId != null)
+        {
+            var group = await _groupService.GetByIdAsync(request.GroupId.Value);
+            if (group != null)
+            {
+                groupName = group.Groupname;
+            }
+        }
         Activity activity = await GetByIdAsync(request.Id) ?? throw new NotFoundException();
 
         activity.Description = request.Description;
@@ -57,6 +96,22 @@ public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseS
         }).ToList();
 
         await _expenseService.AddRangeAsync(splits);
+
+        await _activityLoggerService.LogAsync(request.PaidById, $"You paid ₹{request.Amount} for {request.Description}" +
+        (request.GroupId != null ? $" in {groupName}" : ""));
+
+            // Log for each participant (excluding the payer)
+        foreach (var split in request.Splits)
+        {
+            if (split.UserId != request.PaidById)
+            {
+                await _activityLoggerService.LogAsync(
+                    split.UserId,
+                    $"You owe ₹{split.SplitAmount} for '{request.Description}'" +
+                    (request.GroupId != null ? $" in group {groupName}" : "")
+                );
+            }
+        }
         return SplitWiseConstants.RECORD_UPDATED;
     }
 
@@ -94,6 +149,40 @@ public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseS
         Activity activity = await GetByIdAsync(id) ?? throw new NotFoundException();
         activity.Isdeleted = true;
         await UpdateAsync(activity);
+
+        var splits = await GetListAsync(x => x.Id == id, query => query.Include(x => x.ActivitySplits)); // Assume this method exists
+
+        string groupName = "";
+        if (activity.Groupid.HasValue)
+        {
+            var group = await _groupService.GetByIdAsync(activity.Groupid.Value);
+            groupName = group?.Groupname ?? "";
+        }
+
+        // Log for payer
+        string payerMessage = activity.Groupid != null
+            ? $"You deleted the expense '{activity.Description}' in group '{groupName}'"
+            : $"You deleted the expense '{activity.Description}'";
+        if (activity.Paidbyid.HasValue)
+        {
+            await _activityLoggerService.LogAsync(activity.Paidbyid.Value, payerMessage);
+        }
+
+        // Log for other participants (if group or individual split)
+        foreach (var split in splits)
+        {
+            if (split.Paidbyid != activity.Paidbyid)
+            {
+                string userMessage = activity.Groupid != null
+                    ? $"The expense '{activity.Description}' was deleted in group '{groupName}'"
+                    : $"The expense '{activity.Description}' was deleted";
+
+                if (split.Paidbyid.HasValue)
+                {
+                    await _activityLoggerService.LogAsync(split.Paidbyid.Value, userMessage);
+                }
+            }
+        }
         return SplitWiseConstants.RECORD_DELETED;
     }
 

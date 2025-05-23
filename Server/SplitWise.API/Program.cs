@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
 using Scalar.AspNetCore;
-using AutoMapper;
 using SplitWise.Domain.Data;
 using SplitWise.Repository.Interface;
 using SplitWise.Repository.Implementation;
@@ -8,7 +6,10 @@ using SplitWise.Service.Interface;
 using SplitWise.Service.Implementation;
 using Microsoft.EntityFrameworkCore;
 using SplitWise.Service;
+using SplitWise.Domain.Generic.Entity;
+using SplitWise.Domain;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(SplitWiseConstants.EMAIL_SETTINGS));
 
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(Program));
@@ -30,6 +31,9 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IGroupMemberService, GroupMemberService>();
 builder.Services.AddScoped<IAppContextService, AppContextService>();
 builder.Services.AddScoped<IFriendService, FriendService>();
+builder.Services.AddScoped<IActivityLoggerService, ActivityLoggerService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 builder.Services.AddControllers();

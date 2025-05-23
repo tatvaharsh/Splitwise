@@ -29,9 +29,7 @@ export class AddFriendComponent implements OnInit {
   ) {
     this.friendForm = this.fb.group({
       name: ["", [Validators.required, Validators.minLength(2)]],
-      email: ["", [Validators.required, Validators.email]],
-      phone: [""],
-      profilePic: [""],
+      email: ["", [Validators.required, Validators.email]]
     })
   }
 
@@ -46,8 +44,6 @@ export class AddFriendComponent implements OnInit {
     this.friendService.addFriend({
       name: formValue.name,
       email: formValue.email,
-      phone: formValue.phone || undefined,
-      profilePic: formValue.profilePic || undefined,
     })
 
     // Add activity
