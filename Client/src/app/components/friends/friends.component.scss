@@ -116,4 +116,16 @@
       color: rgba(0, 0, 0, 0.6);
     }
   }
+  .friend-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
   
+  .friend-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .pending-friends-section{
+    margin-top: 15px;
+  }

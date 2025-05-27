@@ -11,5 +11,6 @@ public interface IActivityService : IBaseService<Activity>
     Task<string> EditActivityAsync(UpdateActivityRequest command);
     Task<UpdateActivityRequest> GetExpenseByIdAsync(Guid id);
     Task<List<ActivityResponse>> GetAllListQuery();
-
+    Task<Dictionary<Guid, decimal>> CalculateNetBalancesForGroupAsync(Guid groupId);
+    List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decimal> activityBalances);
 }

@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
 using SplitWise.Domain;
 using SplitWise.Domain.Data;
@@ -9,10 +10,11 @@ using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService,
+public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService,IUserService userService,
 IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseRepository), IActivityService
 {
     private readonly IExpenseService _expenseService = expenseService;
+    private readonly IUserService _userService = userService;
     private readonly IGroupService _groupService = groupService;
     private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     public async Task<string> CreateActivityAsync(CreateActivityRequest request)
@@ -220,5 +222,94 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
                 SplitAmount = s.Activity.ActivitySplits.FirstOrDefault(x => x.Userid == s.Userid)?.Splitamount ?? 0 
             }).ToList()
         };
+    }
+
+    public async Task<Dictionary<Guid, decimal>> CalculateNetBalancesForGroupAsync(Guid groupId)
+    {
+        var activities = await GetListAsync(
+            x => x.Groupid == groupId && !x.Isdeleted,
+            query => query.Include(x => x.ActivitySplits)
+                        .ThenInclude(x => x.User)
+        );
+
+        var netBalances = new Dictionary<Guid, decimal>();
+
+        foreach (var activity in activities)
+        {
+            if (activity.Paidbyid == null)
+                continue;
+
+            var payerId = activity.Paidbyid.Value;
+            var totalAmount = activity.Amount.GetValueOrDefault(); // Handle nullable decimal
+
+            if (!netBalances.ContainsKey(payerId))
+                netBalances[payerId] = 0;
+
+            netBalances[payerId] += totalAmount;
+
+            foreach (var split in activity.ActivitySplits)
+            {
+                if (split.Userid == null)
+                    continue;
+
+                var userId = split.Userid.Value;
+                var shareAmount = split.Splitamount; // Handle non-nullable decimal
+
+                if (!netBalances.ContainsKey(userId))
+                    netBalances[userId] = 0;
+
+                netBalances[userId] -= shareAmount;
+            }
+        }
+
+        return netBalances;
+    }
+
+    public List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decimal> netBalances)
+    {
+        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+        
+        var settlements = new List<SettleSummaryDto>();
+
+        var creditors = new Queue<KeyValuePair<Guid, decimal>>(
+            netBalances.Where(x => x.Value > 0)
+                    .OrderByDescending(x => x.Value));
+
+        var debtors = new Queue<KeyValuePair<Guid, decimal>>(
+            netBalances.Where(x => x.Value < 0)
+                    .OrderBy(x => x.Value));
+
+        while (creditors.Any() && debtors.Any())
+        {
+            var creditor = creditors.Dequeue();
+            var debtor = debtors.Dequeue();
+
+            var amountToSettle = Math.Min(creditor.Value, Math.Abs(debtor.Value));
+            var payerUser = _userService.GetOneAsync(x => x.Id == debtor.Key).Result;
+            var receiverUser = _userService.GetOneAsync(x => x.Id == creditor.Key).Result;
+            settlements.Add(new SettleSummaryDto
+            {
+                PayerId = debtor.Key,
+                PayerName = debtor.Key == userId ? "You" : payerUser.Username,
+                ReceiverId = creditor.Key,
+                ReceiverName = creditor.Key == userId ? "You" : receiverUser.Username,
+                Amount = amountToSettle
+            });
+
+            var remainingCreditor = creditor.Value - amountToSettle;
+            var remainingDebtor = debtor.Value + amountToSettle;
+
+            if (remainingCreditor > 0)
+                creditors.Enqueue(new KeyValuePair<Guid, decimal>(creditor.Key, remainingCreditor));
+
+            if (remainingDebtor < 0)
+                debtors.Enqueue(new KeyValuePair<Guid, decimal>(debtor.Key, remainingDebtor));
+        }
+
+        return settlements
+        .Where(s => s.PayerId == userId || s.ReceiverId == userId)
+        .ToList();
     }
 }

@@ -22,6 +22,30 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
     private readonly IGroupService _groupService = groupService;
     private readonly IActivityService _activityService = activityService;
 
+    public async Task<string> AcceptFriendAsync(Guid friendId)
+    {
+        // Simulate logged-in user (replace with _appContextService.GetUserId() in real app)
+        var userId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
+
+        // Find the friend request
+        var friendRequest = GetOneAsync(
+            x => (x.Userid == userId && x.Friendid == friendId) || (x.Userid == friendId && x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        ).Result;
+
+        if (friendRequest == null || friendRequest.Status != "pending")
+        {
+            throw new Exception();
+        }
+
+        // Update status to accepted
+        friendRequest.Status = "accepted";
+        await UpdateAsync(friendRequest);
+
+        return SplitWiseConstants.RECORD_UPDATED;
+    }
+
+
     public async Task<string> AddFriendAsync(AddFriend friend)
     {
         // Simulate logged-in user (replace with _appContextService.GetUserId() in real app)
@@ -169,58 +193,45 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         return Domain.SplitWiseConstants.RECORD_DELETED;
     }
 
-    public async Task<List<FriendResponse>> GetAllListQuery()
+    public async Task<FriendResponse> GetAllListQuery()
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
         Guid userId = Guid.Parse(userIdString);
 
+        // 1. Get Accepted Friends
         var friendEntities = await GetListAsync(
             x => x.Status == "accepted" && (x.Userid == userId || x.Friendid == userId),
             query => query.Include(x => x.User).Include(x => x.Friend)
         );
 
-        var friendResponses = new List<FriendResponse>();
+        var acceptedFriends = new List<AcceptedFriendResponse>();
 
         foreach (var friend in friendEntities)
         {
             var friendId = friend.Userid == userId ? friend.Friendid : friend.Userid;
             var friendName = friend.Userid == userId ? friend.Friend.Username : friend.User.Username;
 
-            // Shared group check
-            var groupMembers = await _groupMemberService.GetListAsync(
-                x => x.Memberid == userId || x.Memberid == friendId
-            );
-
-            var sharedGroupIds = groupMembers
-                .GroupBy(x => x.Groupid)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToList();
-
-            // Fetch related activities
+            // Get all shared activities
             var activities = await _activityService.GetListAsync(
                 x =>
                     !x.Isdeleted &&
-                        (
-                            //  Group activity: user and friend must both be participants
-                            (x.Groupid != null &&
-                            x.ActivitySplits.Any(s => s.Userid == userId) &&
-                            x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+                    (
+                        (x.Groupid != null &&
+                        x.ActivitySplits.Any(s => s.Userid == userId) &&
+                        x.ActivitySplits.Any(s => s.Userid == friendId)) ||
 
-                            //  Non-group expense: direct involvement
-                            (x.Groupid == null && (
-                                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
-                                (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
-                            ))
-                        ) &&
-                        //  Filter out where one of them is payer and the other is in splits
+                        (x.Groupid == null &&
                         (
                             (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
-                            (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId)) ||
-                            (x.Paidbyid == friendId && friendId == userId) || // user paid and is in splits
-                            (x.Paidbyid == userId && friendId == userId)
-                        ),
+                            (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
+                        ))
+                    ) &&
+                    (
+                        (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+                        (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId)) ||
+                        (x.Paidbyid == friendId && friendId == userId) ||
+                        (x.Paidbyid == userId && friendId == userId)
+                    ),
                 query => query.Include(a => a.ActivitySplits)
             );
 
@@ -246,16 +257,46 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
                     lastActivity = activity;
             }
 
-            friendResponses.Add(new FriendResponse
+            acceptedFriends.Add(new AcceptedFriendResponse
             {
-                Id = (friend.Userid == userId ? friend.Friendid : friend.Userid )?? Guid.Empty,
+                Id = friendId ?? Guid.Empty,
                 Name = friendName,
                 LastActivityDescription = lastActivity?.Description,
                 OweLentAmount = totalOweLent
             });
         }
-        return friendResponses;
+
+        // 2. Get Pending Friends
+        var pendingEntities = await GetListAsync(
+            x => x.Status == "pending" && (x.Userid == userId || x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        );
+
+        var pendingFriends = new List<PendingFriendResponse>();
+
+        foreach (var pending in pendingEntities)
+        {
+            var friendId = pending.Userid == userId ? pending.Friendid : pending.Userid;
+            var friendName = pending.Userid == userId ? pending.Friend?.Username : pending.User?.Username;
+
+            if (friendId != null && friendName != null)
+            {
+                pendingFriends.Add(new PendingFriendResponse
+                {
+                    Id = friendId.Value,
+                    Name = friendName
+                });
+            }
+        }
+
+        // 3. Return Combined Response
+        return new FriendResponse
+        {
+            AcceptedFriends = acceptedFriends,
+            PendingFriends = pendingFriends
+        };
     }
+
 
     public async Task<GetFriendresponse> GetFriendDetails(Guid id)
     {
@@ -401,4 +442,28 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
 
         return friendResponses;
     }
+
+    public async Task<string> RejectFriendAsync(Guid friendId)
+    {
+        // Simulate logged-in user (replace with _appContextService.GetUserId() in real app)
+        var userId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
+
+        // Find the friend request
+        var friendRequest = GetOneAsync(
+            x => (x.Userid == userId && x.Friendid == friendId) || (x.Userid == friendId && x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        ).Result;
+
+        if (friendRequest == null || friendRequest.Status != "pending")
+        {
+            throw new Exception();
+        }
+
+        // Update status to accepted
+        friendRequest.Status = "rejected";
+        await UpdateAsync(friendRequest);
+
+        return SplitWiseConstants.RECORD_UPDATED;
+    }
+
 }

@@ -12,9 +12,10 @@ namespace SplitWise.API.Controllers;
 [ApiController]
 [Route("api/Expense")]
 public class ExpenseController(IActivityService activityService, IExpenseService expenseService, IGroupService groupService, IActivityLoggerService activityLoggerService,
-IFriendService friendService, IAppContextService appContextService) : BaseController
+IFriendService friendService, IAppContextService appContextService, ITransactionService transactionService) : BaseController
 {
     private readonly IActivityService _activityService = activityService;
+    private readonly ITransactionService _transactionService = transactionService;
     private readonly IFriendService _friendService = friendService;
     private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
     private readonly IGroupService _groupService = groupService;
@@ -56,9 +57,9 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
         Guid userId = Guid.Parse(userIdString);
         if (id == Guid.Empty)
             return BadRequest("Invalid Group ID");
-        
+
         var activity = await _activityService.GetByIdAsync(id);
-        var splits = await _activityService.GetOneAsync(x => x.Id == id, query => query.Include(x => x.ActivitySplits)); 
+        var splits = await _activityService.GetOneAsync(x => x.Id == id, query => query.Include(x => x.ActivitySplits));
 
         string groupName = "";
         if (activity.Groupid.HasValue)
@@ -146,7 +147,7 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
                     Amount = groupEntity.Amount,
                     Date = groupEntity.Time,
                     OweLentAmount = Math.Abs(owelentAmount),
-                    OweLentAmountOverall = 0 
+                    OweLentAmountOverall = 0
                 };
             }).ToList();
 
@@ -159,5 +160,34 @@ IFriendService friendService, IAppContextService appContextService) : BaseContro
         return SuccessResponse(content: groupResponses);
     }
 
+    [HttpGet("settle-summary/{groupId}")]
+    public async Task<IActionResult> GetSettleSummaryAsync([FromRoute] Guid groupId)
+    {
+        if (groupId == Guid.Empty)
+            return BadRequest("Invalid group ID.");
 
+        // Step 1: Get net balances from group activities (expenses, shares)
+        var activityBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId);
+
+        // Step 2: Fetch completed transactions for this group
+        var completedTransactions = await _transactionService.GetListAsync
+            (t => t.Groupid == groupId && t.Status == "completed" && !t.Isdeleted);
+
+        // Step 3: Adjust net balances using transaction history
+        foreach (var transaction in completedTransactions)
+        {
+            if (transaction.Payerid.HasValue && activityBalances.ContainsKey(transaction.Payerid.Value))
+            {
+                activityBalances[transaction.Payerid.Value] += transaction.Amount;
+            }
+
+            if (transaction.Receiverid.HasValue && activityBalances.ContainsKey(transaction.Receiverid.Value))
+            {
+                activityBalances[transaction.Receiverid.Value] -= transaction.Amount;
+            }
+        }
+        //return for only logged in user
+        var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
+        return SuccessResponse(content: simplifiedSettlements);
+    }
 }

@@ -61,3 +61,11 @@ export interface UpdateActivityRequest {
   date: Date; 
   splits: ActivitySplitRequest[];
 }
+
+export interface SettleUpSummary {
+  payerId: string;
+  payerName: string;
+  receiverName : string;
+  receiverId: string;
+  amount: number;
+}

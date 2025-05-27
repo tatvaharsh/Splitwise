@@ -20,11 +20,12 @@ import { AddGroupComponent } from "../add-group/add-group.component"
 import { DeleteConfirmationDialogComponent } from "../../generic/delete-confirmation-dialog"
 import { DeleteConfirmationService } from "../../services/DeleteConfirmationService"
 import { FriendService } from "../../services/friend.service"
+import { SettleUpDialogComponent } from "../settle-up-dialog/settle-up-dialog.component"
 
 @Component({
   selector: "app-group-detail",
   templateUrl: "./group-detail.component.html",
-  imports: [MatCardModule, MatIconModule, CommonModule, MatTabsModule, MatButtonModule, MatMenuModule, DeleteConfirmationDialogComponent, RouterModule],
+  imports: [MatCardModule, MatIconModule, CommonModule, MatTabsModule, MatButtonModule, MatMenuModule, DeleteConfirmationDialogComponent, RouterModule, SettleUpDialogComponent],
   standalone: true,
   styleUrls: ["./group-detail.component.scss"],
 })
@@ -36,7 +37,8 @@ export class GroupDetailComponent implements OnInit {
   amount: number = 0
   memberId: string = '';
   expenseId: string = '';
-
+  isDialogOpen = false;
+  groupId: string = '';
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -50,6 +52,7 @@ export class GroupDetailComponent implements OnInit {
         const groupId = params.get("id") || "";
         this.groupService.getGroupById(groupId).subscribe(response => {
           this.group = response.content;
+          this.groupId = this.group.id || '';
         });
       });
       this.route.paramMap.pipe(
@@ -81,12 +84,8 @@ export class GroupDetailComponent implements OnInit {
     })
   }
 
-  openSettleUpDialog(group: Group): void {
-    this.dialog.open(SettleUpComponent, {
-      width: "500px",
-      maxWidth: "95vw",
-      data: { group },
-    })
+  openSettleUpDialog(groupId: string): void {
+    this.isDialogOpen = true
   }
 
   formatDate(date: Date): string {
@@ -184,5 +183,9 @@ export class GroupDetailComponent implements OnInit {
       title: 'Confirm Delete',
       message: `Are you sure you want to delete this item?`
     });
+  }
+
+  closeDialog(): void {
+    this.isDialogOpen = false
   }
 }

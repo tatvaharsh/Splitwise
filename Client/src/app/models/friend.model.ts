@@ -10,10 +10,19 @@ export interface Friend extends User {
 }
 
 export interface FriendResponse {
+  acceptedFriends: acceptedFriends[];
+  pendingFriends: pendingFriends[];
+}
+export interface acceptedFriends{
   id:string;
   name: string;
   lastActivityDescription:string;
   oweLentAmount:number;
+}
+
+export interface pendingFriends{
+  id:string;
+  name: string;
 }
 
 export interface GetExpenseByGroupId {
@@ -31,4 +40,9 @@ export interface GetFriendResponse {
   name: string;
   expenses?: GetExpenseByGroupId[]; 
   oweLentAmountOverall: number;
+}
+
+export interface AddFriendRequest {
+  name: string;
+  email: string;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
-import type { Expense, ExpenseApiResponseContent, Expenses, UpdateActivityRequest } from "../models/expense.model"
+import type { Expense, ExpenseApiResponseContent, Expenses, SettleUpSummary, UpdateActivityRequest } from "../models/expense.model"
 import { UserService } from "./user.service"
 import { FriendService } from "./friend.service"
 import { HttpClient } from "@angular/common/http"
@@ -17,6 +17,12 @@ export class ExpenseService {
     private userService: UserService,
     private friendService: FriendService,
   ) {}
+
+  getSettleUpSummary(groupId: string): Observable<IResponse<SettleUpSummary[]>> {
+    return this.http.get<IResponse<SettleUpSummary[]>>(
+      `${this.apiUrl}settle-summary/${groupId}`
+    );
+  }
 
   FetchDropDownList(): Observable<
     IResponse<ExpenseApiResponseContent>> {return this.http.get<IResponse<ExpenseApiResponseContent>>(

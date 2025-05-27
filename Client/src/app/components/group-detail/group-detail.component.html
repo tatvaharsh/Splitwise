@@ -57,7 +57,7 @@
       </div>
       
       
-      <button mat-raised-button color="primary" (click)="openSettleUpDialog(group)">
+      <button mat-raised-button color="primary" (click)="openSettleUpDialog(group.id)">
         <mat-icon>payments</mat-icon>
         Settle Up
       </button>
@@ -100,7 +100,7 @@
                 >
                   {{ expense.oweLentAmount === 0 
                       ? 'You are not involved' 
-                      : (expense.payerName === 'You' ? 'I lent' : 'I borrowed') + ' ₹' + expense.oweLentAmount }}
+                      : (expense.payerName === 'You' ? 'You lent' : 'You borrowed') + ' ₹' + expense.oweLentAmount }}
                 </div>
               </div>
             </mat-card>
@@ -167,3 +167,9 @@
         (confirm)="deleteExpense()"
         (cancel)="cancelDelete()"
       ></app-delete-confirmation-dialog>
+
+      <app-settle-up-dialog 
+      [isOpen]="isDialogOpen"
+      [groupId]="groupId"
+      (closeDialog)="closeDialog()">
+      </app-settle-up-dialog>

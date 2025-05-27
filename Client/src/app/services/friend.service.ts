@@ -30,13 +30,25 @@ export class FriendService {
     return this.http.get<boolean>(`${this.apiUrl}check-outstanding?memberId=${memberId}&groupId=${groupId}`);
   }
 
-  getAllFriendDetail(): Observable<IResponse<FriendResponse[]>> {
-    return this.http.get<IResponse<FriendResponse[]>>(`${this.apiUrl}GetList`);
+  getAllFriendDetail(): Observable<IResponse<FriendResponse>> {
+    return this.http.get<IResponse<FriendResponse>>(`${this.apiUrl}GetList`);
   }
 
   getFriendById(id: string): Observable<IResponse<GetFriendResponse>> {
     return this.http.get<IResponse<GetFriendResponse>>(`${this.apiUrl}getfriend/${id}`);  
   }
+
+  addFriend(formData: FormData): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}add`, formData);
+  }
+
+  approveFriend(id: string): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}accept/${id}`, {});
+  }
+
+  rejectFriend(id: string): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}reject/${id}`, {});
+  } 
   
   private mockFriends: Friend[] = [
     {
@@ -102,16 +114,16 @@ export class FriendService {
   //   return of(friend)
   // }
 
-  addFriend(friend: Omit<Friend, "id" | "balance">): void {
-    const newFriend: Friend = {
-      ...friend,
-      id: `friend${this.mockFriends.length + 1}`,
-      balance: 0,
-    }
+  // addFriend(friend: Omit<Friend, "id" | "balance">): void {
+  //   const newFriend: Friend = {
+  //     ...friend,
+  //     id: `friend${this.mockFriends.length + 1}`,
+  //     balance: 0,
+  //   }
 
-    this.mockFriends.push(newFriend)
-    this.friendsSubject.next([...this.mockFriends])
-  }
+  //   this.mockFriends.push(newFriend)
+  //   this.friendsSubject.next([...this.mockFriends])
+  // }
 
   updateFriendBalance(friendId: string, amount: number): void {
     const index = this.mockFriends.findIndex((f) => f.id === friendId)

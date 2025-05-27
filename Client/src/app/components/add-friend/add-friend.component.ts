@@ -36,27 +36,16 @@ export class AddFriendComponent implements OnInit {
   ngOnInit(): void {}
 
   onSubmit(): void {
-    if (this.friendForm.invalid) return
-
-    const formValue = this.friendForm.value
-
-    // Add friend
-    this.friendService.addFriend({
-      name: formValue.name,
-      email: formValue.email,
-    })
-
-    // Add activity
-    this.activityService.addActivity({
-      type: "friend",
-      description: `You added ${formValue.name} as a friend`,
-      date: new Date(),
-      friendName: formValue.name,
-      icon: "person_add",
-    })
-
+    if (this.friendForm.valid) {
+      this.friendService.addFriend(this.friendForm.value).subscribe({
+        next: () => {
+          this.dialogRef.close(); 
+        }
+      });
+    }
     this.dialogRef.close()
   }
+  
 
   onCancel(): void {
     this.dialogRef.close()

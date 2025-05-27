@@ -1,0 +1,108 @@
+<!-- Overlay -->
+<div *ngIf="isOpen" class="dialog-overlay" (click)="onClose()">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      
+      <!-- Balance Selection View -->
+      <div *ngIf="!selectedBalance" class="balance-selection">
+        <div class="dialog-header">
+          <h2 class="dialog-title">Select a balance to settle</h2>
+        </div>
+        
+        <div class="balance-list">
+            <div 
+            *ngFor="let balance of balances" 
+            class="balance-item"
+            (click)="handleBalanceSelect(balance)"
+          >
+            <div class="balance-left">
+              <div class="avatar-fallback">{{ getInitials(balance.payerName) }}</div>
+              <span class="balance-name">{{ balance.payerName }}</span>
+            </div>
+          
+            <div class="balance-middle arrow-section">
+              <span class="balance-amount">₹{{ balance.amount | number:'1.2-2' }}</span>
+              <svg class="arrow-icon" width="40" height="20" viewBox="0 0 24 24">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+          
+            <div class="balance-right">
+              <div class="avatar-fallback">{{ getInitials(balance.receiverName) }}</div>
+              <span class="balance-name">{{ balance.receiverName }}</span>
+            </div>
+          </div>
+          
+        </div>
+        
+        <div class="dialog-footer">
+          <button class="btn btn-outline" (click)="onClose()">Close</button>
+        </div>
+      </div>
+  
+      <!-- Payment Recording View -->
+      <div *ngIf="selectedBalance" class="payment-recording">
+        <div class="payment-header">
+          <button class="icon-btn" (click)="handleBack()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <h2 class="payment-title">Record payment</h2>
+          <button class="icon-btn" (click)="handleRecordPayment()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </button>
+        </div>
+  
+        <div class="payment-content">
+            <!-- Avatar Section -->
+            <div class="avatar-section">
+              <div class="avatar large">
+                <div class="avatar-fallback blue">
+                  {{ getInitials(selectedBalance.payerName) }}
+                </div>
+              </div>
+          
+              <div class="arrow-container">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+          
+              <div class="avatar large">
+                <div class="avatar-fallback blue">
+                  {{ getInitials(selectedBalance.receiverName) }}
+                </div>
+              </div>
+            </div>
+          
+            <!-- Payment Info -->
+            <div class="payment-info">
+              <p class="payer-name">{{ selectedBalance.payerName }} → {{ selectedBalance.receiverName }}</p>
+            </div>
+          
+            <!-- Amount Input -->
+            <div class="amount-section">
+              <div class="amount-input-container">
+                <span class="currency-symbol">₹</span>
+                <input 
+                  type="number" 
+                  [(ngModel)]="paymentAmount"
+                  class="amount-input"
+                  placeholder="0.00"
+                >
+              </div>
+            </div>
+          
+            <!-- Info Message -->
+            <div class="info-message">
+              <p>This feature does not move money.</p>
+            </div>
+          
+          </div>
+          
+      </div>
+    </div>
+  </div>
+  

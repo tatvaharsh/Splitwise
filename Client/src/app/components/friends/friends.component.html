@@ -7,9 +7,10 @@
     </button>
   </div>
 
+  <!-- Accepted Friends List -->
   <div class="friends-list">
-    <ng-container *ngIf="friends?.length; else noFriends">
-      <mat-card class="friend-card" *ngFor="let friend of friends" (click)="openFriend(friend.id)">
+    <ng-container *ngIf="friends?.acceptedFriends?.length; else noFriends">
+      <mat-card class="friend-card" *ngFor="let friend of friends.acceptedFriends" (click)="openFriend(friend.id)">
         <div class="friend-card-content">
           <div class="friend-info">
             <h2 class="friend-name">{{ friend.name }}</h2>
@@ -37,5 +38,21 @@
         </button>
       </div>
     </ng-template>
+  </div>
+
+  <!-- Pending Friends List -->
+  <div class="pending-friends-section" *ngIf="friends?.pendingFriends?.length">
+    <h2>Pending Friend Requests</h2>
+    <mat-card class="friend-card pending-card" *ngFor="let pending of friends.pendingFriends">
+      <div class="friend-card-content">
+        <div class="friend-info">
+          <h2 class="friend-name">{{ pending.name }}</h2>
+        </div>
+        <div class="friend-actions">
+          <button mat-button color="primary" (click)="approveFriend(pending.id)">Approve</button>
+          <button mat-button color="warn" (click)="rejectFriend(pending.id)">Reject</button>
+        </div>
+      </div>
+    </mat-card>
   </div>
 </div>

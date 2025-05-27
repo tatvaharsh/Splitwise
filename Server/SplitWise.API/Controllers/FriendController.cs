@@ -45,7 +45,7 @@ public class FriendController(IFriendService friendService) : BaseController
     [HttpGet("GetList")]
     public async Task<IActionResult> GetList()
     {
-        List<FriendResponse> res = await _friendService.GetAllListQuery();
+        FriendResponse res = await _friendService.GetAllListQuery();
         return SuccessResponse(content: res);
     }
 
@@ -65,4 +65,23 @@ public class FriendController(IFriendService friendService) : BaseController
         return SuccessResponse<object>(message: await _friendService.AddFriendAsync(friend));
     }
 
+    [HttpPost("accept/{friendId}")]
+    public async Task<IActionResult> AcceptFriend([FromRoute] Guid friendId)
+    {
+        if (friendId == Guid.Empty)
+            return BadRequest("Invalid Friend ID");
+
+        var result = await _friendService.AcceptFriendAsync(friendId);
+        return SuccessResponse<object>(message: result);
+    }
+
+    [HttpPost("reject/{friendId}")]
+    public async Task<IActionResult> RejectFriend([FromRoute] Guid friendId)
+    {
+        if (friendId == Guid.Empty)
+            return BadRequest("Invalid Friend ID");
+
+        var result = await _friendService.RejectFriendAsync(friendId);
+        return SuccessResponse<object>(message: result);
+    }
 }

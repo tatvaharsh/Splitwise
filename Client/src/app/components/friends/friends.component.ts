@@ -17,7 +17,7 @@ import { CommonModule } from "@angular/common"
   styleUrls: ["./friends.component.scss"],
 })
 export class FriendsComponent implements OnInit {
-  friends: FriendResponse[] = []
+  friends!: FriendResponse
 
   constructor(
     private friendService: FriendService,
@@ -63,5 +63,21 @@ export class FriendsComponent implements OnInit {
     } else {
       return "neutral"
     }
+  }
+
+  approveFriend(id: string) {
+    this.friendService.approveFriend(id).subscribe(() => {
+      this.friendService.getAllFriendDetail().subscribe((res) => {
+        this.friends = res.content;
+      });
+    });
+  }
+  
+  rejectFriend(id: string) {
+    this.friendService.rejectFriend(id).subscribe(() => {
+      this.friendService.getAllFriendDetail().subscribe((res) => {
+        this.friends = res.content;
+      });
+    });
   }
 }
