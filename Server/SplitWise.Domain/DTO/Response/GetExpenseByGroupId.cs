@@ -9,5 +9,7 @@ public class GetExpenseByGroupId
     public decimal? OweLentAmount { get; set; }
     public decimal? OweLentAmountOverall { get; set; }
     public DateTime? Date { get; set; }
+    public bool? IsSettlement { get; set; }
+
 
 }

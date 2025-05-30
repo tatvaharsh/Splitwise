@@ -9,30 +9,39 @@
         </div>
         
         <div class="balance-list">
-            <div 
-            *ngFor="let balance of balances" 
-            class="balance-item"
-            (click)="handleBalanceSelect(balance)"
-          >
-            <div class="balance-left">
-              <div class="avatar-fallback">{{ getInitials(balance.payerName) }}</div>
-              <span class="balance-name">{{ balance.payerName }}</span>
-            </div>
+            <ng-container *ngIf="balances.length>0; else allSettled">
+              <div 
+                *ngFor="let balance of balances" 
+                class="balance-item"
+                (click)="handleBalanceSelect(balance)"
+              >
+                <div class="balance-left">
+                  <div class="avatar-fallback">{{ getInitials(balance.payerName) }}</div>
+                  <span class="balance-name">{{ balance.payerName }}</span>
+                </div>
+              
+                <div class="balance-middle arrow-section">
+                  <span class="balance-amount">₹{{ balance.amount | number:'1.2-2' }}</span>
+                  <svg class="arrow-icon" width="40" height="20" viewBox="0 0 24 24">
+                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+              
+                <div class="balance-right">
+                  <div class="avatar-fallback">{{ getInitials(balance.receiverName) }}</div>
+                  <span class="balance-name">{{ balance.receiverName }}</span>
+                </div>
+              </div>
+            </ng-container>
           
-            <div class="balance-middle arrow-section">
-              <span class="balance-amount">₹{{ balance.amount | number:'1.2-2' }}</span>
-              <svg class="arrow-icon" width="40" height="20" viewBox="0 0 24 24">
-                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-          
-            <div class="balance-right">
-              <div class="avatar-fallback">{{ getInitials(balance.receiverName) }}</div>
-              <span class="balance-name">{{ balance.receiverName }}</span>
-            </div>
+            <!-- Template shown when no balances are available -->
+            <ng-template #allSettled>
+              <div class="all-settled-message">
+                <p>🎉 Everything is settled up!</p>
+              </div>
+            </ng-template>
           </div>
           
-        </div>
         
         <div class="dialog-footer">
           <button class="btn btn-outline" (click)="onClose()">Close</button>

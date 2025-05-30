@@ -20,6 +20,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { DeleteConfirmationDialogComponent } from "../../generic/delete-confirmation-dialog"
 import { DeleteConfirmationService } from "../../services/DeleteConfirmationService"
+import { SettleUpDialogComponent } from "../settle-up-dialog/settle-up-dialog.component"
 @Component({
   selector: "app-friend-detail",
   templateUrl: "./friend-detail.component.html",
@@ -27,7 +28,7 @@ import { DeleteConfirmationService } from "../../services/DeleteConfirmationServ
     MatIconModule,
     MatMenuModule,
     RouterModule,
-    DeleteConfirmationDialogComponent],
+    DeleteConfirmationDialogComponent, SettleUpDialogComponent],
   standalone: true,
   styleUrls: ["./friend-detail.component.scss"],
 })
@@ -36,6 +37,9 @@ export class FriendDetailComponent implements OnInit {
   friend !: GetFriendResponse
   Math: any
   expenseId: string = '';
+  isDialogOpen = false;
+  friendId: string = '';
+
   constructor(
     private route: ActivatedRoute,
     private friendService: FriendService,
@@ -52,6 +56,7 @@ export class FriendDetailComponent implements OnInit {
       const friendId = params.get("id") || "";
       this.friendService.getFriendById(friendId).subscribe(response => {
         this.friend = response.content;
+        this.friendId = this.friend.id || '';
       });
     });
   }
@@ -65,12 +70,8 @@ export class FriendDetailComponent implements OnInit {
     })
   }
 
-  openSettleUpDialog(friend: GetFriendResponse): void {
-    this.dialog.open(SettleUpComponent, {
-      width: "500px",
-      maxWidth: "95vw",
-      data: { friend },
-    })
+  openSettleUpDialog(friendId: string): void {
+    this.isDialogOpen = true
   }
 
   getBalanceText(balance: number): string {
@@ -132,5 +133,9 @@ export class FriendDetailComponent implements OnInit {
 
   cancelDelete(): void {
     this.deleteService.close();
+  }
+
+  closeDialog(): void {
+    this.isDialogOpen = false
   }
 }

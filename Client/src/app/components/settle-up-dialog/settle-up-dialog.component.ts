@@ -18,6 +18,7 @@ import { FormsModule } from '@angular/forms';
 export class SettleUpDialogComponent {
   @Input() isOpen = false
   @Input() groupId!: string;
+  @Input() friendId!: string;
   @Output() closeDialog = new EventEmitter<void>()
   balances: SettleUpSummary[] = [];
   constructor(
@@ -27,12 +28,21 @@ export class SettleUpDialogComponent {
   paymentAmount = ""
 
   ngOnChanges(): void {
-    if(this.groupId)
-    this.settleupservice.getSettleUpSummary(this.groupId).subscribe({
-      next: (res) => {
-        this.balances = res.content;
-      }
-  })
+    if(this.groupId){
+      this.settleupservice.getSettleUpSummary(this.groupId).subscribe({
+        next: (res) => {
+          this.balances = res.content;
+        }
+    })
+    }
+    if(this.friendId) {
+      this.settleupservice.getSettleUpSummaryByFriend(this.friendId).subscribe({
+        next: (res) => {
+          this.balances = res.content;
+        }
+      });
+    }
+
   }
   handleBalanceSelect(balance: SettleUpSummary): void {
     this.selectedBalance = balance
@@ -45,9 +55,20 @@ export class SettleUpDialogComponent {
   }
 
   handleRecordPayment(): void {
-    console.log(`Recording payment: ${this.selectedBalance?.payerName} paid ${this.selectedBalance?.receiverName} ₹${this.paymentAmount}`)
-    this.onClose()
+    const payload = {
+      payerId: this.selectedBalance?.payerId,
+      receiverId: this.selectedBalance?.receiverId,
+      amount: this.selectedBalance?.amount,
+      groupId: this.groupId
+    };
+  
+    this.settleupservice.SettleUpGroup(payload).subscribe({
+      next: (response) => {
+        this.onClose(); // Close dialog or reset form
+      }
+    });
   }
+  
 
   onClose(): void {
     this.selectedBalance = null

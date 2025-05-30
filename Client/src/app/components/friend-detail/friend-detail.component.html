@@ -32,7 +32,7 @@
     <button 
       mat-raised-button 
       color="primary" 
-      (click)="openSettleUpDialog(friend)" 
+      (click)="openSettleUpDialog(friend.id)" 
       [disabled]="friend.oweLentAmountOverall === 0">
       <mat-icon>payments</mat-icon>
       Settle Up
@@ -117,3 +117,9 @@
         (confirm)="deleteExpense()"
         (cancel)="cancelDelete()"
       ></app-delete-confirmation-dialog>
+
+      <app-settle-up-dialog 
+      [isOpen]="isDialogOpen"
+      [friendId]="friendId"
+      (closeDialog)="closeDialog()">
+      </app-settle-up-dialog>

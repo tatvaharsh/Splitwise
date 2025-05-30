@@ -13,4 +13,7 @@ public interface IActivityService : IBaseService<Activity>
     Task<List<ActivityResponse>> GetAllListQuery();
     Task<Dictionary<Guid, decimal>> CalculateNetBalancesForGroupAsync(Guid groupId);
     List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decimal> activityBalances);
+    Task<string> SettleUpAsync(SettleUpRequest request);
+    Task<Dictionary<Guid, decimal>> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id);
+
 }

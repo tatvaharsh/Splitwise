@@ -12,9 +12,10 @@ namespace SplitWise.API.Controllers;
 [ApiController]
 [Route("api/Expense")]
 public class ExpenseController(IActivityService activityService, IExpenseService expenseService, IGroupService groupService, IActivityLoggerService activityLoggerService,
-IFriendService friendService, IAppContextService appContextService, ITransactionService transactionService) : BaseController
+IFriendService friendService, IUserService userService,  IAppContextService appContextService, ITransactionService transactionService) : BaseController
 {
     private readonly IActivityService _activityService = activityService;
+    private readonly IUserService _userService = userService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly IFriendService _friendService = friendService;
     private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
@@ -108,13 +109,20 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
     {
         Guid currentUserId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
 
+        // Fetch activity data
         List<Activity> groupEntities = await _activityService.GetListAsync(
             x => x.Groupid == id && x.Paidbyid != null,
             query => query.Include(x => x.ActivitySplits).ThenInclude(x => x.User)
         ) ?? throw new Exception();
 
-        decimal totalOweLent = 0; // Total net lent or owed
+        // Fetch settle-up transactions in this group
+        List<Transaction> groupTransactions = await _transactionService.GetListAsync(
+            x => x.Groupid == id
+        );
 
+        decimal totalOweLent = 0;
+
+        // Expense entries
         var groupResponses = groupEntities
             .OrderByDescending(g => g.CreatedAt)
             .Select(groupEntity =>
@@ -123,16 +131,14 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
 
                 if (groupEntity.Paidbyid == currentUserId)
                 {
-                    // User paid, so they lent to others
                     owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount)
                         - groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
                 }
                 else
                 {
-                    // User owes their part
                     owelentAmount = groupEntity.ActivitySplits
                         .FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
-                    owelentAmount *= -1; // Owed amount is negative
+                    owelentAmount *= -1;
                 }
 
                 totalOweLent += owelentAmount;
@@ -151,7 +157,29 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
                 };
             }).ToList();
 
-        // Update OweLentAmountOverall for each item (optional)
+        // Apply transaction adjustments
+        foreach (var txn in groupTransactions)
+        {
+            if (txn.Payerid == currentUserId)
+            {
+                // If you owe money, paying reduces your debt
+                if (totalOweLent < 0)
+                    totalOweLent += txn.Amount;
+                else
+                    totalOweLent -= txn.Amount;
+            }
+            else if (txn.Receiverid == currentUserId)
+            {
+                // If you receive money, your debt is reduced, or your lend is reimbursed
+                if (totalOweLent < 0)
+                    totalOweLent += txn.Amount;
+                else
+                    totalOweLent -= txn.Amount;
+            }
+        }
+
+
+        // Update overall balances
         foreach (var item in groupResponses)
         {
             item.OweLentAmountOverall = totalOweLent;
@@ -159,6 +187,7 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
 
         return SuccessResponse(content: groupResponses);
     }
+
 
     [HttpGet("settle-summary/{groupId}")]
     public async Task<IActionResult> GetSettleSummaryAsync([FromRoute] Guid groupId)
@@ -171,7 +200,7 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
 
         // Step 2: Fetch completed transactions for this group
         var completedTransactions = await _transactionService.GetListAsync
-            (t => t.Groupid == groupId && t.Status == "completed" && !t.Isdeleted);
+            (t => t.Groupid == groupId && !t.Isdeleted);
 
         // Step 3: Adjust net balances using transaction history
         foreach (var transaction in completedTransactions)
@@ -190,4 +219,70 @@ IFriendService friendService, IAppContextService appContextService, ITransaction
         var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
         return SuccessResponse(content: simplifiedSettlements);
     }
+
+    [HttpPost("settle-up")]
+    public async Task<IActionResult> SettleUp([FromBody] SettleUpRequest request)
+    {
+        if (request.Amount <= 0 || request.PayerId == Guid.Empty || request.ReceiverId == Guid.Empty)
+            return BadRequest("Invalid input.");
+
+        var result = await _activityService.SettleUpAsync(request);
+        return SuccessResponse(content: result);
+    }
+    
+    [HttpGet("settle-summary/friends/{friend2Id}")] 
+    public async Task<IActionResult> GetFriendSettleSummaryAsync(
+        [FromRoute] Guid friend2Id) 
+    {
+        // Retrieve the logged-in user's ID
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid loggedInUserId = Guid.Parse(userIdString);
+       // Guid? loggedInUserId = GetCurrentUserId();
+
+        if (loggedInUserId == Guid.Empty)
+        {
+            return Unauthorized("User is not logged in or user ID is invalid.");
+        }
+
+        Guid friend1Id = loggedInUserId; // Assign logged-in user's ID to friend1Id
+
+        // Validate input IDs
+        if (friend2Id == Guid.Empty || friend1Id == friend2Id)
+        {
+            return BadRequest("Invalid friend ID or attempting to settle with self.");
+        }
+
+        // Step 1: Calculate net balances specifically between these two friends
+        // This method will only consider expenses and splits relevant to friend1 and friend2
+        var activityBalances = await _activityService.CalculateNetBalancesForFriendsAsync(friend1Id, friend2Id);
+
+        // Step 2: Fetch completed transactions *only between these two friends*
+        var completedTransactions = await _transactionService.GetListAsync(
+            t => ((t.Payerid == friend1Id && t.Receiverid == friend2Id) ||
+                  (t.Payerid == friend2Id && t.Receiverid == friend1Id)) &&
+                 !t.Isdeleted);
+
+        // Step 3: Adjust net balances using the transaction history between them
+        foreach (var transaction in completedTransactions)
+        {
+            if (transaction.Payerid.HasValue && activityBalances.ContainsKey(transaction.Payerid.Value))
+            {
+                activityBalances[transaction.Payerid.Value] += transaction.Amount;
+            }
+
+            if (transaction.Receiverid.HasValue && activityBalances.ContainsKey(transaction.Receiverid.Value))
+            {
+                activityBalances[transaction.Receiverid.Value] -= transaction.Amount;
+            }
+        }
+
+        // Step 4: Calculate minimal settlements using the adjusted balances
+        // This will return who owes whom and how much, simplified to minimal transactions
+        var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
+
+        return SuccessResponse(content: simplifiedSettlements);
+    }
+
+
+
 }

@@ -10,10 +10,11 @@ using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService,IUserService userService,
+public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService, IUserService userService, ITransactionService transactionService,
 IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseRepository), IActivityService
 {
     private readonly IExpenseService _expenseService = expenseService;
+    private readonly ITransactionService _transactionService = transactionService;
     private readonly IUserService _userService = userService;
     private readonly IGroupService _groupService = groupService;
     private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
@@ -51,7 +52,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         await _activityLoggerService.LogAsync(request.PaidById, $"You paid ₹{request.Amount} for {request.Description}" +
             (request.GroupId != null ? $" in {groupName}" : ""));
 
-            // Log for each participant (excluding the payer)
+        // Log for each participant (excluding the payer)
         foreach (var split in request.Splits)
         {
             if (split.UserId != request.PaidById)
@@ -102,7 +103,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         await _activityLoggerService.LogAsync(request.PaidById, $"You paid ₹{request.Amount} for {request.Description}" +
         (request.GroupId != null ? $" in {groupName}" : ""));
 
-            // Log for each participant (excluding the payer)
+        // Log for each participant (excluding the payer)
         foreach (var split in request.Splits)
         {
             if (split.UserId != request.PaidById)
@@ -126,10 +127,10 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         // Fetch activities where user is either payer or involved in splits
         var activities = await GetListAsync(a => a.Paidbyid == userId || a.ActivitySplits.Any(s => s.Userid == userId),
             query => query.Include(a => a.ActivitySplits)
-                        .ThenInclude(s => s.User) 
-            .Include(a => a.Group)); 
+                        .ThenInclude(s => s.User)
+            .Include(a => a.Group));
 
-        var activityResponses = activities.OrderByDescending(x =>x.CreatedAt).Select(exp => new ActivityResponse
+        var activityResponses = activities.OrderByDescending(x => x.CreatedAt).Select(exp => new ActivityResponse
         {
             Id = exp.Id,
             Date = exp.Time,
@@ -204,7 +205,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
     {
         var activity = await GetByIdAsync(id) ?? throw new Exception("Activity not found");
 
-        var splits = await GetOneAsync(x=>x.Id == id, query => query
+        var splits = await GetOneAsync(x => x.Id == id, query => query
             .Include(x => x.ActivitySplits)
             .ThenInclude(x => x.User)) ?? throw new Exception("Activity not found");
 
@@ -214,12 +215,12 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
             Description = activity.Description,
             PaidById = activity.Paidbyid ?? new Guid(),
             GroupId = activity.Groupid,
-            Amount = activity.Amount ?? 0 ,
+            Amount = activity.Amount ?? 0,
             Date = activity.Time ?? DateTime.UtcNow,
             Splits = splits.ActivitySplits.Select(s => new ActivitySplitRequest
             {
                 UserId = s.Activity.ActivitySplits.FirstOrDefault(x => x.Userid == s.Userid)?.Userid ?? new Guid(),
-                SplitAmount = s.Activity.ActivitySplits.FirstOrDefault(x => x.Userid == s.Userid)?.Splitamount ?? 0 
+                SplitAmount = s.Activity.ActivitySplits.FirstOrDefault(x => x.Userid == s.Userid)?.Splitamount ?? 0
             }).ToList()
         };
     }
@@ -270,7 +271,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
         Guid userId = Guid.Parse(userIdString);
-        
+
         var settlements = new List<SettleSummaryDto>();
 
         var creditors = new Queue<KeyValuePair<Guid, decimal>>(
@@ -312,4 +313,73 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         .Where(s => s.PayerId == userId || s.ReceiverId == userId)
         .ToList();
     }
+
+    public async Task<string> SettleUpAsync(SettleUpRequest request)
+    {
+        var settlement = new Transaction
+        {
+            Payerid = request.PayerId,
+            Receiverid = request.ReceiverId,
+            Amount = request.Amount,
+            Groupid = request.GroupId,
+            Time = DateTime.UtcNow
+        };
+        await _transactionService.AddAsync(settlement);
+        return SplitWiseConstants.RECORD_CREATED;
+    }
+
+    public async Task<Dictionary<Guid, decimal>> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id)
+    {
+        // Initialize balances for the two friends
+        var netBalances = new Dictionary<Guid, decimal>
+        {
+            { friend1Id, 0m },
+            { friend2Id, 0m }
+        };
+
+        // Fetch activities where either friend is the payer OR involved in a split
+        // We need to fetch all activities that involve either friend, then filter splits.
+        var relevantActivities = await GetListAsync(
+            x => (x.Paidbyid == friend1Id || x.Paidbyid == friend2Id) ||
+                 x.ActivitySplits.Any(s => s.Userid == friend1Id || s.Userid == friend2Id) && !x.Isdeleted,
+            query => query.Include(x => x.ActivitySplits)
+        );
+
+        foreach (var activity in relevantActivities)
+        {
+            var payerId = activity.Paidbyid;
+            var totalAmount = activity.Amount.GetValueOrDefault();
+
+            // If the payer is one of the two friends, add the amount they paid
+            if (payerId == friend1Id && netBalances.ContainsKey(friend1Id))
+            {
+                netBalances[friend1Id] += totalAmount;
+            }
+            else if (payerId == friend2Id && netBalances.ContainsKey(friend2Id))
+            {
+                netBalances[friend2Id] += totalAmount;
+            }
+
+            // Iterate through splits to subtract amounts owed by each friend
+            foreach (var split in activity.ActivitySplits)
+            {
+                var userId = split.Userid;
+                var shareAmount = split.Splitamount;
+
+                // If the split is for friend1 and they are in the balance dictionary
+                if (userId == friend1Id && netBalances.ContainsKey(friend1Id))
+                {
+                    netBalances[friend1Id] -= shareAmount;
+                }
+                // If the split is for friend2 and they are in the balance dictionary
+                else if (userId == friend2Id && netBalances.ContainsKey(friend2Id))
+                {
+                    netBalances[friend2Id] -= shareAmount;
+                }
+            }
+        }
+
+        return netBalances;
+    }
+
 }

@@ -18,6 +18,16 @@ export class ExpenseService {
     private friendService: FriendService,
   ) {}
 
+  getSettleUpSummaryByFriend(friendId: string): Observable<IResponse<SettleUpSummary[]>> {
+    return this.http.get<IResponse<SettleUpSummary[]>>(
+      `${this.apiUrl}settle-summary/friends/${friendId}`
+    );
+  }
+
+  SettleUpGroup(data : any): Observable<IResponse<null>> {
+    return this.http.post<IResponse<null>>(`${this.apiUrl}settle-up`, data);
+  }
+
   getSettleUpSummary(groupId: string): Observable<IResponse<SettleUpSummary[]>> {
     return this.http.get<IResponse<SettleUpSummary[]>>(
       `${this.apiUrl}settle-summary/${groupId}`
