@@ -10,7 +10,7 @@ using SplitWise.Service.Interface;
 
 namespace SplitWise.Service.Implementation;
 
-public class GroupService(IBaseRepository<Group> baseRepository,  IAppContextService appContextService,
+public class GroupService(IBaseRepository<Group> baseRepository, IAppContextService appContextService,
 IGroupMemberService groupMemberService, ApplicationContext applicationContext, IActivityLoggerService activityLoggerService) : BaseService<Group>(baseRepository), IGroupService
 {
     private readonly IAppContextService _appContextService = appContextService;
@@ -29,9 +29,10 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
             Groupname = request.GroupName,
             CreatedAt = DateTime.UtcNow,
         };
-        if(request.AutoLogo != null){
-        string fileUrl = await FileHelper.UploadFile(request.AutoLogo, SplitWiseConstants.CUSTOMER_FOLDER);
-        groupEntity.AutoLogo = fileUrl;
+        if (request.AutoLogo != null)
+        {
+            string fileUrl = await FileHelper.UploadFile(request.AutoLogo, SplitWiseConstants.CUSTOMER_FOLDER);
+            groupEntity.AutoLogo = fileUrl;
         }
         await AddAsync(groupEntity);
 
@@ -63,7 +64,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
             Members = group.GroupMembers.Select(member => new MemberResponse
             {
                 Id = member.Memberid ?? new Guid(),
-                 Name = member.Memberid == userId ? "You" : member.Member.Username
+                Name = member.Memberid == userId ? "You" : member.Member.Username
             }).ToList(),
         }).ToList();
         return groupResponses;
@@ -75,7 +76,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
         // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
         Guid userId = Guid.Parse(userIdString);
-        Group groupEntity = await GetOneAsync(x=>x.Id == request.Id) ?? throw new NotFoundException();
+        Group groupEntity = await GetOneAsync(x => x.Id == request.Id) ?? throw new NotFoundException();
 
         groupEntity.Groupname = request.GroupName;
         if (request.AutoLogo != null)
@@ -90,7 +91,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
         // Get all members of the group (including the updater)
         var groupMembers = await GetOneAsync(
             gm => gm.Id == request.Id,
-            query => query.Include(x=>x.GroupMembers) // optional if you want user details
+            query => query.Include(x => x.GroupMembers) // optional if you want user details
         );
 
         // Log for all members about the update

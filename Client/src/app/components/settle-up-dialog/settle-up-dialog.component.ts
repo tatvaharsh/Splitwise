@@ -38,7 +38,7 @@ export class SettleUpDialogComponent {
     if(this.friendId) {
       this.settleupservice.getSettleUpSummaryByFriend(this.friendId).subscribe({
         next: (res) => {
-          this.balances = res.content;
+          this.balances = [...res.content.groupSettlements, ...res.content.oneToOneSettlements];
         }
       });
     }
@@ -59,7 +59,7 @@ export class SettleUpDialogComponent {
       payerId: this.selectedBalance?.payerId,
       receiverId: this.selectedBalance?.receiverId,
       amount: this.selectedBalance?.amount,
-      groupId: this.groupId
+      groupId: this.groupId==null ? this.selectedBalance?.groupId : this.groupId,
     };
   
     this.settleupservice.SettleUpGroup(payload).subscribe({

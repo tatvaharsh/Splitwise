@@ -328,20 +328,19 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         return SplitWiseConstants.RECORD_CREATED;
     }
 
-    public async Task<Dictionary<Guid, decimal>> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id)
-    {
-        // Initialize balances for the two friends
-        var netBalances = new Dictionary<Guid, decimal>
-        {
-            { friend1Id, 0m },
-            { friend2Id, 0m }
-        };
 
-        // Fetch activities where either friend is the payer OR involved in a split
-        // We need to fetch all activities that involve either friend, then filter splits.
+    public async Task<FriendBalancesSummary> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id)
+    {
+        var groupNetBalancesPerGroup = new Dictionary<Guid, Dictionary<Guid, decimal>>();
+        var oneToOneNetBalances = new Dictionary<Guid, decimal>
+    {
+        { friend1Id, 0m },
+        { friend2Id, 0m }
+    };
+
         var relevantActivities = await GetListAsync(
-            x => (x.Paidbyid == friend1Id || x.Paidbyid == friend2Id) ||
-                 x.ActivitySplits.Any(s => s.Userid == friend1Id || s.Userid == friend2Id) && !x.Isdeleted,
+            x => ((x.Paidbyid == friend1Id || x.Paidbyid == friend2Id) ||
+                  x.ActivitySplits.Any(s => s.Userid == friend1Id || s.Userid == friend2Id)) && !x.Isdeleted,
             query => query.Include(x => x.ActivitySplits)
         );
 
@@ -349,37 +348,121 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         {
             var payerId = activity.Paidbyid;
             var totalAmount = activity.Amount.GetValueOrDefault();
+            bool isGroupExpense = activity.Groupid.HasValue && activity.Groupid != Guid.Empty;
 
-            // If the payer is one of the two friends, add the amount they paid
-            if (payerId == friend1Id && netBalances.ContainsKey(friend1Id))
+            if (isGroupExpense && activity.Groupid.HasValue)
             {
-                netBalances[friend1Id] += totalAmount;
-            }
-            else if (payerId == friend2Id && netBalances.ContainsKey(friend2Id))
-            {
-                netBalances[friend2Id] += totalAmount;
-            }
-
-            // Iterate through splits to subtract amounts owed by each friend
-            foreach (var split in activity.ActivitySplits)
-            {
-                var userId = split.Userid;
-                var shareAmount = split.Splitamount;
-
-                // If the split is for friend1 and they are in the balance dictionary
-                if (userId == friend1Id && netBalances.ContainsKey(friend1Id))
+                Guid currentGroupId = activity.Groupid.Value;
+                if (!groupNetBalancesPerGroup.ContainsKey(currentGroupId))
                 {
-                    netBalances[friend1Id] -= shareAmount;
+                    groupNetBalancesPerGroup[currentGroupId] = new Dictionary<Guid, decimal>
+                {
+                    { friend1Id, 0m },
+                    { friend2Id, 0m }
+                };
                 }
-                // If the split is for friend2 and they are in the balance dictionary
-                else if (userId == friend2Id && netBalances.ContainsKey(friend2Id))
+
+                // Apply payer amount for group expenses
+                if (payerId == friend1Id && groupNetBalancesPerGroup[currentGroupId].ContainsKey(friend1Id))
                 {
-                    netBalances[friend2Id] -= shareAmount;
+                    groupNetBalancesPerGroup[currentGroupId][friend1Id] += totalAmount;
+                }
+                else if (payerId == friend2Id && groupNetBalancesPerGroup[currentGroupId].ContainsKey(friend2Id))
+                {
+                    groupNetBalancesPerGroup[currentGroupId][friend2Id] += totalAmount;
+                }
+
+                // Apply split amounts for group expenses
+                foreach (var split in activity.ActivitySplits)
+                {
+                    var userId = split.Userid;
+                    var shareAmount = split.Splitamount;
+
+                    if (userId.HasValue && (userId.Value == friend1Id || userId.Value == friend2Id) && groupNetBalancesPerGroup[currentGroupId].ContainsKey(userId.Value))
+                    {
+                        groupNetBalancesPerGroup[currentGroupId][userId.Value] -= shareAmount;
+                    }
+                }
+            }
+            else // One-to-one expense
+            {
+                if (payerId == friend1Id && oneToOneNetBalances.ContainsKey(friend1Id))
+                {
+                    oneToOneNetBalances[friend1Id] += totalAmount;
+                }
+                else if (payerId == friend2Id && oneToOneNetBalances.ContainsKey(friend2Id))
+                {
+                    oneToOneNetBalances[friend2Id] += totalAmount;
+                }
+
+                foreach (var split in activity.ActivitySplits)
+                {
+                    var userId = split.Userid;
+                    var shareAmount = split.Splitamount;
+
+                    if (userId.HasValue && (userId.Value == friend1Id || userId.Value == friend2Id) && oneToOneNetBalances.ContainsKey(userId.Value))
+                    {
+                        oneToOneNetBalances[userId.Value] -= shareAmount;
+                    }
                 }
             }
         }
 
-        return netBalances;
+        return new FriendBalancesSummary
+        {
+            GroupBalancesPerGroup = groupNetBalancesPerGroup,
+            OneToOneBalances = oneToOneNetBalances
+        };
     }
+
+    public List<SettleSummaryDto> CalculateMinimalSettlement(Dictionary<Guid, decimal> netBalances, Guid? groupId = null)
+    {
+        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
+        Guid userId = Guid.Parse(userIdString);
+
+        var settlements = new List<SettleSummaryDto>();
+
+        var creditors = new Queue<KeyValuePair<Guid, decimal>>(
+            netBalances.Where(x => x.Value > 0)
+                .OrderByDescending(x => x.Value));
+
+        var debtors = new Queue<KeyValuePair<Guid, decimal>>(
+            netBalances.Where(x => x.Value < 0)
+                .OrderBy(x => x.Value));
+
+        while (creditors.Any() && debtors.Any())
+        {
+            var creditor = creditors.Dequeue();
+            var debtor = debtors.Dequeue();
+
+            var amountToSettle = Math.Min(creditor.Value, Math.Abs(debtor.Value));
+            var payerUser = _userService.GetOneAsync(x => x.Id == debtor.Key).Result;
+            var receiverUser = _userService.GetOneAsync(x => x.Id == creditor.Key).Result;
+
+            settlements.Add(new SettleSummaryDto
+            {
+                PayerId = debtor.Key,
+                PayerName = debtor.Key == userId ? "You" : payerUser.Username,
+                ReceiverId = creditor.Key,
+                ReceiverName = creditor.Key == userId ? "You" : receiverUser.Username,
+                Amount = amountToSettle,
+                GroupId = groupId // Set the GroupId here
+            });
+
+            var remainingCreditor = creditor.Value - amountToSettle;
+            var remainingDebtor = debtor.Value + amountToSettle;
+
+            if (remainingCreditor > 0)
+                creditors.Enqueue(new KeyValuePair<Guid, decimal>(creditor.Key, remainingCreditor));
+
+            if (remainingDebtor < 0)
+                debtors.Enqueue(new KeyValuePair<Guid, decimal>(debtor.Key, remainingDebtor));
+        }
+
+        return settlements
+        .Where(s => s.PayerId == userId || s.ReceiverId == userId)
+        .ToList();
+    }
+
 
 }

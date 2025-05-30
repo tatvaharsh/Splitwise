@@ -7,6 +7,7 @@ public class SettleSummaryDto
     public Guid ReceiverId { get; set; }
     public string ReceiverName { get; set; } = null!;
     public decimal Amount { get; set; }
+     public Guid? GroupId { get; set; }
 }
 
 public class FriendSettleSummaryDto

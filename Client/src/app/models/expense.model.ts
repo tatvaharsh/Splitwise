@@ -68,4 +68,10 @@ export interface SettleUpSummary {
   receiverName : string;
   receiverId: string;
   amount: number;
+  groupId?: string | null;
+}
+
+export interface SettleUpResponse {
+  groupSettlements: SettleUpSummary[];
+  oneToOneSettlements: SettleUpSummary[];
 }

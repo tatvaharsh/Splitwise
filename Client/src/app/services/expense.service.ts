@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core"
 import { BehaviorSubject, type Observable, of } from "rxjs"
-import type { Expense, ExpenseApiResponseContent, Expenses, SettleUpSummary, UpdateActivityRequest } from "../models/expense.model"
+import type { Expense, ExpenseApiResponseContent, Expenses, SettleUpResponse, SettleUpSummary, UpdateActivityRequest } from "../models/expense.model"
 import { UserService } from "./user.service"
 import { FriendService } from "./friend.service"
 import { HttpClient } from "@angular/common/http"
@@ -18,8 +18,8 @@ export class ExpenseService {
     private friendService: FriendService,
   ) {}
 
-  getSettleUpSummaryByFriend(friendId: string): Observable<IResponse<SettleUpSummary[]>> {
-    return this.http.get<IResponse<SettleUpSummary[]>>(
+  getSettleUpSummaryByFriend(friendId: string): Observable<IResponse<SettleUpResponse>> {
+    return this.http.get<IResponse<SettleUpResponse>>(
       `${this.apiUrl}settle-summary/friends/${friendId}`
     );
   }
