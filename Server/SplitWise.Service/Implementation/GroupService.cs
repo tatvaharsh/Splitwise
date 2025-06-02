@@ -20,9 +20,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
 
     public async Task<string> CreateGroupAsync(GroupRequest request)
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         Group groupEntity = new()
         {
             Creatorid = userId,
@@ -50,9 +48,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
 
     public async Task<List<OnlyGroupResponse>> GetGroupsAsync()
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         List<Group> groupEntities = await GetListAsync(
                     x => x.GroupMembers.Any(m => m.Memberid == userId),
                     query => query.Include(x => x.GroupMembers)
@@ -73,9 +69,7 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
 
     public async Task<string> UpdateGroupAsync(GroupUpdateRequest request)
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         Group groupEntity = await GetOneAsync(x => x.Id == request.Id) ?? throw new NotFoundException();
 
         groupEntity.Groupname = request.GroupName;
@@ -110,5 +104,4 @@ IGroupMemberService groupMemberService, ApplicationContext applicationContext, I
         }
         return SplitWiseConstants.RECORD_UPDATED;
     }
-
 }

@@ -53,9 +53,8 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
     [HttpDelete("delete/{id:Guid}")]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+
         if (id == Guid.Empty)
             return BadRequest("Invalid Group ID");
 
@@ -107,7 +106,7 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
     [HttpGet("get/{id}")]
     public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
     {
-        Guid currentUserId = Guid.Parse("78c89439-8cb5-4e93-8565-de9b7cf6c6ae");
+        Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
 
         // Fetch activity data
         List<Activity> groupEntities = await _activityService.GetListAsync(
@@ -188,46 +187,6 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse(content: groupResponses);
     }
 
-
-    // [HttpGet("settle-summary/{groupId}")]
-    // public async Task<IActionResult> GetSettleSummaryAsync([FromRoute] Guid groupId)
-    // {
-    //     if (groupId == Guid.Empty)
-    //         return BadRequest("Invalid group ID.");
-
-    //     // Step 1: Get net balances from group activities (expenses, shares)
-    //     var activityBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId);
-
-    //     var allTransactions = await _transactionService.GetListAsync(
-    //         t => (t.Groupid == groupId || t.Groupid == null) && !t.Isdeleted
-    //     );
-
-    //     // Step 3: Filter in-memory using activityBalances
-    //     var completedTransactions = allTransactions
-    //         .Where(t =>
-    //             (t.Payerid.HasValue && activityBalances.ContainsKey(t.Payerid.Value)) ||
-    //             (t.Receiverid.HasValue && activityBalances.ContainsKey(t.Receiverid.Value)))
-    //         .ToList();
-
-
-    //     // Step 3: Adjust net balances using transaction history
-    //     foreach (var transaction in completedTransactions)
-    //     {
-    //         if (transaction.Payerid.HasValue && activityBalances.ContainsKey(transaction.Payerid.Value))
-    //         {
-    //             activityBalances[transaction.Payerid.Value] += transaction.Amount;
-    //         }
-
-    //         if (transaction.Receiverid.HasValue && activityBalances.ContainsKey(transaction.Receiverid.Value))
-    //         {
-    //             activityBalances[transaction.Receiverid.Value] -= transaction.Amount;
-    //         }
-    //     }
-    //     //return for only logged in user
-    //     var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
-    //     return SuccessResponse(content: simplifiedSettlements);
-    // }
-
     [HttpGet("settle-summary/{groupId}")]
     public async Task<IActionResult> GetSettleSummaryAsync([FromRoute] Guid groupId)
     {
@@ -306,121 +265,11 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse(content: result);
     }
 
-    // [HttpGet("settle-summary/friends/{friend2Id}")] 
-    // public async Task<IActionResult> GetFriendSettleSummaryAsync(
-    //     [FromRoute] Guid friend2Id) 
-    // {
-    //     // Retrieve the logged-in user's ID
-    //     var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-    //     Guid loggedInUserId = Guid.Parse(userIdString);
-    //    // Guid? loggedInUserId = GetCurrentUserId();
-
-    //     if (loggedInUserId == Guid.Empty)
-    //     {
-    //         return Unauthorized("User is not logged in or user ID is invalid.");
-    //     }
-
-    //     Guid friend1Id = loggedInUserId; // Assign logged-in user's ID to friend1Id
-
-    //     // Validate input IDs
-    //     if (friend2Id == Guid.Empty || friend1Id == friend2Id)
-    //     {
-    //         return BadRequest("Invalid friend ID or attempting to settle with self.");
-    //     }
-
-    //     // Step 1: Calculate net balances specifically between these two friends
-    //     // This method will only consider expenses and splits relevant to friend1 and friend2
-    //     var activityBalances = await _activityService.CalculateNetBalancesForFriendsAsync(friend1Id, friend2Id);
-
-    //     // Step 2: Fetch completed transactions *only between these two friends*
-    //     var completedTransactions = await _transactionService.GetListAsync(
-    //         t => ((t.Payerid == friend1Id && t.Receiverid == friend2Id) ||
-    //               (t.Payerid == friend2Id && t.Receiverid == friend1Id)) &&
-    //              !t.Isdeleted);
-
-    //     // Step 3: Adjust net balances using the transaction history between them
-    //     foreach (var transaction in completedTransactions)
-    //     {
-    //         if (transaction.Payerid.HasValue && activityBalances.ContainsKey(transaction.Payerid.Value))
-    //         {
-    //             activityBalances[transaction.Payerid.Value] += transaction.Amount;
-    //         }
-
-    //         if (transaction.Receiverid.HasValue && activityBalances.ContainsKey(transaction.Receiverid.Value))
-    //         {
-    //             activityBalances[transaction.Receiverid.Value] -= transaction.Amount;
-    //         }
-    //     }
-
-    //     // Step 4: Calculate minimal settlements using the adjusted balances
-    //     // This will return who owes whom and how much, simplified to minimal transactions
-    //     var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
-
-    //     return SuccessResponse(content: simplifiedSettlements);
-    // }
-
-    // [HttpGet("settle-summary/friends/{friend2Id}")] 
-    // public async Task<IActionResult> GetFriendSettleSummaryAsync(
-    //     [FromRoute] Guid friend2Id) 
-    // {
-    //     // Retrieve the logged-in user's ID
-    //     var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-    //     Guid loggedInUserId = Guid.Parse(userIdString);
-    //    // Guid? loggedInUserId = GetCurrentUserId();
-
-    //     if (loggedInUserId == Guid.Empty)
-    //     {
-    //         return Unauthorized("User is not logged in or user ID is invalid.");
-    //     }
-
-    //     Guid friend1Id = loggedInUserId; // Assign logged-in user's ID to friend1Id
-
-    //     // Validate input IDs
-    //     if (friend2Id == Guid.Empty || friend1Id == friend2Id)
-    //     {
-    //         return BadRequest("Invalid friend ID or attempting to settle with self.");
-    //     }
-
-    //     // Step 1: Calculate net balances specifically between these two friends
-    //     // This method will only consider expenses and splits relevant to friend1 and friend2
-    //     var activityBalances = await _activityService.CalculateNetBalancesForFriendsAsync(friend1Id, friend2Id);
-
-    //     // Step 2: Fetch completed transactions *only between these two friends*
-    //     var completedTransactions = await _transactionService.GetListAsync(
-    //         t => ((t.Payerid == friend1Id && t.Receiverid == friend2Id) ||
-    //               (t.Payerid == friend2Id && t.Receiverid == friend1Id)) &&
-    //              !t.Isdeleted);
-
-    //     // Step 3: Adjust net balances using the transaction history between them
-    //     foreach (var transaction in completedTransactions)
-    //     {
-    //         if (transaction.Payerid.HasValue && activityBalances.ContainsKey(transaction.Payerid.Value))
-    //         {
-    //             activityBalances[transaction.Payerid.Value] += transaction.Amount;
-    //         }
-
-    //         if (transaction.Receiverid.HasValue && activityBalances.ContainsKey(transaction.Receiverid.Value))
-    //         {
-    //             activityBalances[transaction.Receiverid.Value] -= transaction.Amount;
-    //         }
-    //     }
-
-    //     // Step 4: Calculate minimal settlements using the adjusted balances
-    //     // This will return who owes whom and how much, simplified to minimal transactions
-    //     var simplifiedSettlements = _activityService.CalculateMinimalSettlements(activityBalances);
-
-    //     return SuccessResponse(content: simplifiedSettlements);
-    // }
-
     [HttpGet("settle-summary/friends/{friend2Id}")]
     public async Task<IActionResult> GetFriendSettleSummaryAsync(
     [FromRoute] Guid friend2Id)
     {
-        // Retrieve the logged-in user's ID
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid loggedInUserId = Guid.Parse(userIdString);
-        // Guid? loggedInUserId = GetCurrentUserId(); // Use this if you have a proper method to get user ID
-
+        Guid loggedInUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         if (loggedInUserId == Guid.Empty)
         {
             return Unauthorized("User is not logged in or user ID is invalid.");

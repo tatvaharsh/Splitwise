@@ -26,9 +26,6 @@ public class BaseService<T>(IBaseRepository<T> repository) : IBaseService<T> whe
 
     public async Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate) => await _repository.GetAsync(predicate).ToListAsync();
 
-    // public async Task<T?> GetOneAsync(Expression<Func<T, bool>>? predicate, params Expression<Func<T, object>>[] includes)
-    //     => await _repository.GetAsync(predicate, includes).FirstOrDefaultAsync();
-
     public async Task<T?> GetOneAsync(
     Expression<Func<T, bool>>? predicate,
     Func<IQueryable<T>, IQueryable<T>>? include = null)
@@ -36,8 +33,6 @@ public class BaseService<T>(IBaseRepository<T> repository) : IBaseService<T> whe
         return await _repository.GetAsync(predicate, include).FirstOrDefaultAsync();
     }
 
-    // public async Task<List<T>> GetListAsync(Expression<Func<T, bool>>? predicate, params Expression<Func<T, object>>[] includes)
-    //     => await _repository.GetAsync(predicate, includes).ToListAsync();
     public async Task<List<T>> GetListAsync(
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IQueryable<T>>? include = null)

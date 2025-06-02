@@ -1,46 +1,44 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using SplitWise.Domain;
 using SplitWise.Domain.DTO.Requests;
 using SplitWise.Service.Interface;
 
 namespace SplitWise.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class AuthController : BaseController
+[Route("api/Auth")]
+public class AuthController(IAuthService authService, IJwtService jwtService)  : BaseController
 {
-    // private readonly IAuthService _service = service;
+    private readonly IAuthService _authService = authService;
+    private readonly IJwtService _jwtService = jwtService;
 
-    // [HttpPost("register")]
-    // public async Task<IActionResult> Register(RegisterRequest request)
-    // {
-    //     var result = await _service.RegisterAsync(request);
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(RegisterRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new { Errors = errors });
+        }
 
-    //     if (result != "Registration successful.")
-    //         return BadRequest(result);
+        var result = await _authService.RegisterAsync(request);
 
-    //     return Ok(result);
-    // }
-    //  public IActionResult Index()
-    // {
-    //     // Manually create a claim
-    //     var claims = new List<Claim>
-    //     {
-    //         new Claim("USER_ID", "78c89439-8cb5-4e93-8565-de9b7cf6c6ae"),
-    //         new Claim(ClaimTypes.Name, "Test User")
-    //     };
+        if (result != "Registration successful.")
+            return BadRequest(new { Message = result });
 
-    //     // Create an identity and principal
-    //     var identity = new ClaimsIdentity(claims, "TestAuthType");
-    //     var principal = new ClaimsPrincipal(identity);
+        return SuccessResponse(content: result);
+    }
 
-    //     // Assign it to HttpContext.User
-    //     HttpContext.User = principal;
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
-    //     // Now you can test your code
-    //     string userIdClaim = HttpContext.User?.Claims
-    //         ?.FirstOrDefault(x => x.Type == "USER_ID")?.Value;
-
-    //     return Content($"UserIdClaim = {userIdClaim}");
-    // }
+        var user = await _authService.GetOneAsync(u => u.Email == request.Email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+            throw new CustomException(StatusCodes.Status400BadRequest, SplitWiseConstants.INVALID_LOGIN);
+        var token = _jwtService.GenerateAccessToken(user);
+        return SuccessResponse(content : token);
+    }
 }

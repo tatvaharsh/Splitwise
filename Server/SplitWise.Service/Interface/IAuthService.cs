@@ -1,10 +1,9 @@
-// using SplitWise.Domain.Data;
-// using SplitWise.Domain.DTO.Requests;
+using SplitWise.Domain.Data;
+using SplitWise.Domain.DTO.Requests;
 
-// namespace SplitWise.Service.Interface;
+namespace SplitWise.Service.Interface;
 
-// public interface IAuthService
-// {
-//     Task<string> RegisterAsync(RegisterRequest request);
-//     Task<User?> LoginAsync(LoginRequest request);
-// }
+public interface IAuthService: IBaseService<User>
+{
+    Task<string> RegisterAsync(RegisterRequest request);
+}

@@ -7,9 +7,10 @@ namespace SplitWise.API.Controllers;
 
 [ApiController]
 [Route("api/Activity")]
-public class ActivityController(IActivityService activityService, IActivityLoggerService activityLoggerService) : BaseController
+public class ActivityController(IActivityService activityService, IActivityLoggerService activityLoggerService, IAppContextService appContextService) : BaseController
 {
     private readonly IActivityService _activityService = activityService;
+    private readonly IAppContextService _appContextService = appContextService;
     private readonly IActivityLoggerService _activityLoggerService = activityLoggerService;
 
     [HttpGet("GetList")]
@@ -22,9 +23,7 @@ public class ActivityController(IActivityService activityService, IActivityLogge
     [HttpGet("list")]
     public async Task<IActionResult> GetAllActivity()
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
 
         List<ActivityLog> res = (await _activityLoggerService.GetListAsync(x => x.UserId == userId))
         .OrderByDescending(x => x.CreatedAt)

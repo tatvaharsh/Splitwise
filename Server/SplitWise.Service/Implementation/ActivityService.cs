@@ -11,9 +11,10 @@ using SplitWise.Service.Interface;
 namespace SplitWise.Service.Implementation;
 
 public class ActivityService(IBaseRepository<Activity> baseRepository, IExpenseService expenseService, IGroupService groupService, IUserService userService, ITransactionService transactionService,
-IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseRepository), IActivityService
+IActivityLoggerService activityLoggerService, IAppContextService appContextService) : BaseService<Activity>(baseRepository), IActivityService
 {
     private readonly IExpenseService _expenseService = expenseService;
+    private readonly IAppContextService _appContextService = appContextService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly IUserService _userService = userService;
     private readonly IGroupService _groupService = groupService;
@@ -120,10 +121,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
 
     public async Task<List<ActivityResponse>> GetAllListQuery()
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
-
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         // Fetch activities where user is either payer or involved in splits
         var activities = await GetListAsync(a => a.Paidbyid == userId || a.ActivitySplits.Any(s => s.Userid == userId),
             query => query.Include(a => a.ActivitySplits)
@@ -268,9 +266,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
 
     public List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decimal> netBalances)
     {
-        // Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
 
         var settlements = new List<SettleSummaryDto>();
 
@@ -417,9 +413,7 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
 
     public List<SettleSummaryDto> CalculateMinimalSettlement(Dictionary<Guid, decimal> netBalances, Guid? groupId = null)
     {
-        var userIdString = "78c89439-8cb5-4e93-8565-de9b7cf6c6ae";
-        Guid userId = Guid.Parse(userIdString);
-
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         var settlements = new List<SettleSummaryDto>();
 
         var creditors = new Queue<KeyValuePair<Guid, decimal>>(
@@ -463,6 +457,4 @@ IActivityLoggerService activityLoggerService) : BaseService<Activity>(baseReposi
         .Where(s => s.PayerId == userId || s.ReceiverId == userId)
         .ToList();
     }
-
-
 }
