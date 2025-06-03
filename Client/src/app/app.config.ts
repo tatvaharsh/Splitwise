@@ -3,11 +3,12 @@ import { provideRouter, withComponentInputBinding, withRouterConfig } from '@ang
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { apiInterceptor } from './generic/interceptors/api.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideAnimationsAsync(),
-    provideHttpClient(withFetch()),
+    provideHttpClient(withInterceptors([apiInterceptor])),
     provideRouter(
       routes,
       withRouterConfig({
