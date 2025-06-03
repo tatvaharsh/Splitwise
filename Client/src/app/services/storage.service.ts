@@ -1,38 +1,65 @@
 import { Injectable } from '@angular/core';
 import { IJwtPayload } from '../models/auth.model';
 import { GlobalConstant } from '../generic/global-const';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LocalStorageService {
+  private isBrowser: boolean;
+
+  constructor() {
+    this.isBrowser = typeof window !== 'undefined';
+  }
 
   get(key: string) {
-    return JSON.parse(localStorage.getItem(key) || '{}') || {};
+    if (!this.isBrowser) return null;
+
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch {
+      return null;
+    }
   }
 
   set(key: string, value: any): boolean {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (!this.isBrowser) return false;
 
-    return true;
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   has(key: string): boolean {
+    if (!this.isBrowser) return false;
     return !!localStorage.getItem(key);
   }
 
   remove(key: string) {
-    localStorage.removeItem(key);
+    if (this.isBrowser) {
+      localStorage.removeItem(key);
+    }
   }
 
   clear() {
-    localStorage.clear();
+    if (this.isBrowser) {
+      localStorage.clear();
+    }
   }
 
   getDecodedToken(): IJwtPayload | null {
-    const token = this.get( GlobalConstant.ACCESS_TOKEN);
+    const token = this.get(GlobalConstant.ACCESS_TOKEN);
     if (!token) return null;
-    return jwtDecode<IJwtPayload>(token);
+
+    try {
+      return jwtDecode<IJwtPayload>(token);
+    } catch {
+      return null;
+    }
   }
 }

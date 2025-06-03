@@ -43,16 +43,31 @@
   <!-- Pending Friends List -->
   <div class="pending-friends-section" *ngIf="friends?.pendingFriends?.length">
     <h2>Pending Friend Requests</h2>
+  
     <mat-card class="friend-card pending-card" *ngFor="let pending of friends.pendingFriends">
       <div class="friend-card-content">
         <div class="friend-info">
-          <h2 class="friend-name">{{ pending.name }}</h2>
+          <h2 class="friend-name">
+            {{
+              pending.fromId === currentUserId
+                ? pending.toName
+                : pending.fromName
+            }}
+          </h2>
         </div>
-        <div class="friend-actions">
-          <button mat-button color="primary" (click)="approveFriend(pending.id)">Approve</button>
-          <button mat-button color="warn" (click)="rejectFriend(pending.id)">Reject</button>
+  
+        <!-- Show Approve/Reject only if the user is the receiver -->
+        <div class="friend-actions" *ngIf="pending.toId === currentUserId">
+          <button mat-button color="primary" (click)="approveFriend(pending.fromId)">Approve</button>
+          <button mat-button color="warn" (click)="rejectFriend(pending.fromId)">Reject</button>
+        </div>
+  
+        <!-- If the current user is the sender, show "Pending..." -->
+        <div class="friend-actions" *ngIf="pending.fromId === currentUserId">
+          <span class="pending-status">Pending...</span>
         </div>
       </div>
     </mat-card>
   </div>
+  
 </div>

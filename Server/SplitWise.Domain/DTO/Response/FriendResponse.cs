@@ -20,8 +20,10 @@ public class FriendSettlementSummaryDto
 
 public class PendingFriendResponse
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = null!;
+    public Guid FromId { get; set; }
+    public string FromName { get; set; } = null!;
+    public Guid ToId { get; set; }
+    public string ToName { get; set; } = null!;
 }
 
 public class AcceptedFriendResponse

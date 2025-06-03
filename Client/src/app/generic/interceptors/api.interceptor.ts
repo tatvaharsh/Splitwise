@@ -1,7 +1,7 @@
 import { HttpHandlerFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { tap } from 'rxjs';
+import { catchError, tap, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { LocalStorageService } from '../../services/storage.service';
 import { GlobalConstant } from '../global-const';
@@ -37,6 +37,10 @@ export function apiInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
       if (event instanceof HttpResponse) {
         const response: IResponse<any> = event.body as IResponse<any>;
       }
+    }),
+    catchError((error) => {
+      console.error('API Error:', error);
+      return throwError(() => error);
     })
   );
 }

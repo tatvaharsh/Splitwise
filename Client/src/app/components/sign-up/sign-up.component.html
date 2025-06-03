@@ -1,164 +1,197 @@
 <div class="signup-container">
-    <div class="signup-card">
-      <!-- Header -->
-      <div class="signup-header">
-        <div class="logo-container">
-          <div class="logo">
-            <span class="logo-icon">💰</span>
-            <span class="logo-text">SplitEase</span>
-          </div>
+  <div class="signup-card">
+    <!-- Header -->
+    <div class="signup-header">
+      <div class="logo-container">
+        <div class="logo">
+          <span class="logo-icon">💰</span>
+          <span class="logo-text">SplitEase</span>
         </div>
-        <h1 class="welcome-title">Join SplitEase!</h1>
-        <p class="welcome-subtitle">Create your account and start splitting expenses with ease</p>
       </div>
-  
-      <!-- Signup Form -->
-      <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="signup-form">
-        <!-- Name Fields -->
-        <div class="name-row">
-          <div class="form-group">
-            <label for="firstName" class="form-label">First Name</label>
-            <div class="input-container">
-              <span class="input-icon">👤</span>
-              <input
-                type="text"
-                id="firstName"
-                formControlName="firstName"
-                class="form-input"
-                [class.error]="firstName?.invalid && firstName?.touched"
-                placeholder="First name"
-              />
-            </div>
-            <div *ngIf="firstName?.invalid && firstName?.touched" class="error-message">
-              <span *ngIf="firstName?.errors?.['required']">First name is required</span>
-              <span *ngIf="firstName?.errors?.['minlength']">Must be at least 2 characters</span>
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="lastName" class="form-label">Last Name</label>
-            <div class="input-container">
-              <span class="input-icon">👤</span>
-              <input
-                type="text"
-                id="lastName"
-                formControlName="lastName"
-                class="form-input"
-                [class.error]="lastName?.invalid && lastName?.touched"
-                placeholder="Last name"
-              />
-            </div>
-            <div *ngIf="lastName?.invalid && lastName?.touched" class="error-message">
-              <span *ngIf="lastName?.errors?.['required']">Last name is required</span>
-              <span *ngIf="lastName?.errors?.['minlength']">Must be at least 2 characters</span>
-            </div>
-          </div>
+      <h1 class="welcome-title">Join SplitEase!</h1>
+      <p class="welcome-subtitle">
+        Create your account and start splitting expenses with ease
+      </p>
+    </div>
+
+    <!-- Signup Form -->
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="signup-form">
+      <!-- Name Fields -->
+      <div class="form-group">
+        <label for="userName" class="form-label">User Name</label>
+        <div class="input-container">
+          <span class="input-icon">👤</span>
+          <input
+            type="text"
+            id="userName"
+            formControlName="userName"
+            class="form-input"
+            [class.error]="userName?.invalid && userName?.touched"
+            placeholder="User name"
+          />
         </div>
-  
-        <!-- Email Field -->
-        <div class="form-group">
-          <label for="email" class="form-label">Email Address</label>
-          <div class="input-container">
-            <span class="input-icon">📧</span>
-            <input
-              type="email"
-              id="email"
-              formControlName="email"
-              class="form-input"
-              [class.error]="email?.invalid && email?.touched"
-              placeholder="Enter your email"
-            />
-          </div>
-          <div *ngIf="email?.invalid && email?.touched" class="error-message">
-            <span *ngIf="email?.errors?.['required']">Email is required</span>
-            <span *ngIf="email?.errors?.['email']">Please enter a valid email</span>
-          </div>
-        </div>
-  
-        <!-- Password Field -->
-        <div class="form-group">
-          <label for="password" class="form-label">Password</label>
-          <div class="input-container">
-            <span class="input-icon">🔒</span>
-            <input
-              [type]="showPassword ? 'text' : 'password'"
-              id="password"
-              formControlName="password"
-              class="form-input"
-              [class.error]="password?.invalid && password?.touched"
-              placeholder="Create a password"
-            />
-            <button
-              type="button"
-              class="password-toggle"
-              (click)="togglePasswordVisibility()"
-            >
-              {{ showPassword ? '👁️' : '👁️‍🗨️' }}
-            </button>
-          </div>
-          <div *ngIf="password?.invalid && password?.touched" class="error-message">
-            <span *ngIf="password?.errors?.['required']">Password is required</span>
-            <span *ngIf="password?.errors?.['minlength']">Password must be at least 6 characters</span>
-          </div>
-        </div>
-  
-        <!-- Confirm Password Field -->
-        <div class="form-group">
-          <label for="confirmPassword" class="form-label">Confirm Password</label>
-          <div class="input-container">
-            <span class="input-icon">🔒</span>
-            <input
-              [type]="showConfirmPassword ? 'text' : 'password'"
-              id="confirmPassword"
-              formControlName="confirmPassword"
-              class="form-input"
-              [class.error]="(confirmPassword?.invalid && confirmPassword?.touched) || (signupForm.errors?.['passwordMismatch'] && confirmPassword?.touched)"
-              placeholder="Confirm your password"
-            />
-            <button
-              type="button"
-              class="password-toggle"
-              (click)="toggleConfirmPasswordVisibility()"
-            >
-              {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
-            </button>
-          </div>
-          <div *ngIf="(confirmPassword?.invalid && confirmPassword?.touched) || (signupForm.errors?.['passwordMismatch'] && confirmPassword?.touched)" class="error-message">
-            <span *ngIf="confirmPassword?.errors?.['required']">Please confirm your password</span>
-            <span *ngIf="signupForm.errors?.['passwordMismatch']">Passwords do not match</span>
-          </div>
-        </div>
-  
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          class="submit-btn"
-          [disabled]="isLoading"
-          [class.loading]="isLoading"
+        <div
+          *ngIf="userName?.invalid && userName?.touched"
+          class="error-message"
         >
-          <span *ngIf="!isLoading">Create Account</span>
-          <span *ngIf="isLoading" class="loading-spinner">
-            <span class="spinner"></span>
-            Creating Account...
-          </span>
-        </button>
-  
-        <!-- Login Link -->
-        <div class="login-link">
-          <p>Already have an account? 
-            <button type="button" class="link-btn" (click)="navigateToLogin()">
-              Sign in here
-            </button>
-          </p>
+          <span *ngIf="userName?.errors?.['required']"
+            >First name is required</span
+          >
+          <span *ngIf="userName?.errors?.['minlength']"
+            >Must be at least 2 characters</span
+          >
         </div>
-      </form>
-    </div>
-  
-    <!-- Background Decoration -->
-    <div class="background-decoration">
-      <div class="decoration-circle circle-1"></div>
-      <div class="decoration-circle circle-2"></div>
-      <div class="decoration-circle circle-3"></div>
-      <div class="decoration-circle circle-4"></div>
-    </div>
+      </div>
+
+      <div class="form-group">
+        <label for="phoneNumber" class="form-label">Phone Number</label>
+        <div class="input-container">
+          <span class="input-icon">📞</span>
+          <input
+            type="text"
+            id="phoneNumber"
+            maxlength="10"
+            formControlName="phone"
+            class="form-input"
+            [class.error]="phoneNumber?.invalid && phoneNumber?.touched"
+            placeholder="Phone Number"
+            (input)="onPhoneInput($event)"
+          />
+        </div>
+        <div
+          *ngIf="phoneNumber?.invalid && phoneNumber?.touched"
+          class="error-message"
+        >
+          <span *ngIf="phoneNumber?.errors?.['required']"
+            >Phone Number is required</span
+          >
+          <span *ngIf="phoneNumber?.errors?.['minlength'] || phoneNumber?.errors?.['maxlength']"
+            >Enter Valid Phone Number</span
+          >
+        </div>
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <div class="input-container">
+          <span class="input-icon">📧</span>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-input"
+            [class.error]="email?.invalid && email?.touched"
+            placeholder="Enter your email"
+          />
+        </div>
+        <div *ngIf="email?.invalid && email?.touched" class="error-message">
+          <span *ngIf="email?.errors?.['required']">Email is required</span>
+          <span *ngIf="email?.errors?.['email']"
+            >Please enter a valid email</span
+          >
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-container">
+          <span class="input-icon">🔒</span>
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            formControlName="password"
+            class="form-input"
+            [class.error]="password?.invalid && password?.touched"
+            placeholder="Create a password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+          >
+            {{ showPassword ? "👁️" : "👁️‍🗨️" }}
+          </button>
+        </div>
+        <div
+          *ngIf="password?.invalid && password?.touched"
+          class="error-message"
+        >
+          <span *ngIf="password?.errors?.['required']"
+            >Password is required</span
+          >
+          <span *ngIf="password?.errors?.['minlength']"
+            >Password must be at least 6 characters</span
+          >
+        </div>
+      </div>
+
+      <!-- Confirm Password Field -->
+      <div class="form-group">
+        <label for="confirmPassword" class="form-label">Confirm Password</label>
+        <div class="input-container">
+          <span class="input-icon">🔒</span>
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-input"
+            [class.error]="(confirmPassword?.invalid && confirmPassword?.touched) || (signupForm.errors?.['passwordMismatch'] && confirmPassword?.touched)"
+            placeholder="Confirm your password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="toggleConfirmPasswordVisibility()"
+          >
+            {{ showConfirmPassword ? "👁️" : "👁️‍🗨️" }}
+          </button>
+        </div>
+        <div
+          *ngIf="(confirmPassword?.invalid && confirmPassword?.touched) || (signupForm.errors?.['passwordMismatch'] && confirmPassword?.touched)"
+          class="error-message"
+        >
+          <span *ngIf="confirmPassword?.errors?.['required']"
+            >Please confirm your password</span
+          >
+          <span *ngIf="signupForm.errors?.['passwordMismatch']"
+            >Passwords do not match</span
+          >
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="submit-btn"
+        [disabled]="isLoading"
+        [class.loading]="isLoading"
+      >
+        <span *ngIf="!isLoading">Create Account</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <span class="spinner"></span>
+          Creating Account...
+        </span>
+      </button>
+
+      <!-- Login Link -->
+      <div class="login-link">
+        <p>
+          Already have an account?
+          <button type="button" class="link-btn" (click)="navigateToLogin()">
+            Sign in here
+          </button>
+        </p>
+      </div>
+    </form>
   </div>
+
+  <!-- Background Decoration -->
+  <div class="background-decoration">
+    <div class="decoration-circle circle-1"></div>
+    <div class="decoration-circle circle-2"></div>
+    <div class="decoration-circle circle-3"></div>
+    <div class="decoration-circle circle-4"></div>
+  </div>
+</div>

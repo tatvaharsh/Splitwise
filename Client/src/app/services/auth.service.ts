@@ -18,4 +18,8 @@ export class AuthService {
           data
         );
       }
+
+    signup(formData: FormData): Observable<IResponse<null>> {
+        return this.http.post<IResponse<null>>(`${this.apiUrl}register`, formData);
+      }
 }

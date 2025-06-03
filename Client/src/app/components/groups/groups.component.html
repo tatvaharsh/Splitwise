@@ -1,38 +1,37 @@
 <div class="groups-container">
-    <div class="header">
-      <h1>Groups</h1>
-      <button mat-raised-button color="primary" (click)="openAddGroupDialog()">
-        <mat-icon>add</mat-icon>
-        Add Group
-      </button>
-    </div>
-
-    <div class="groups-list">
-      <ng-container *ngIf="groups$?.length; else noGroups">
-        <mat-card class="group-card" *ngFor="let group of groups$" (click)="openGroup(group.id)">
-          <div class="group-card-content">
-            <div class="group-avatar">
-              <img [src]="group.autoLogo" alt="Group Avatar" />
-            </div>
-            <div class="group-info">
-              <h2 class="group-name">{{ group.groupname }}</h2>
-              <p class="group-members">{{ group.totalMember }} Member</p>
-            </div>
-          </div>
-        </mat-card>
-      </ng-container>
-  
-      <ng-template #noGroups>
-        <div class="empty-state">
-          <mat-icon class="empty-icon">group</mat-icon>
-          <h2>No groups yet</h2>
-          <p>Create a group to start tracking shared expenses</p>
-          <button mat-raised-button color="primary" (click)="openAddGroupDialog()">
-            <mat-icon>add</mat-icon>
-            Add Group
-          </button>
-        </div>
-      </ng-template>
-    </div>
+  <div class="header">
+    <h1>Groups</h1>
+    <button mat-raised-button class="add-group-btn" (click)="openAddGroupDialog()">
+      <mat-icon>add</mat-icon>
+      Add Group
+    </button>
   </div>
-  
+
+  <div class="groups-list">
+    <ng-container *ngIf="groups$?.length; else noGroups">
+      <mat-card class="group-card" *ngFor="let group of groups$" (click)="openGroup(group.id)">
+        <div class="group-card-content">
+          <div class="group-avatar">
+            <img [src]="group.autoLogo" alt="Group Avatar" />
+          </div>
+          <div class="group-info">
+            <h2 class="group-name">{{ group.groupname }}</h2>
+            <p class="group-members">{{ group.totalMember }} Member</p>
+          </div>
+        </div>
+      </mat-card>
+    </ng-container>
+
+    <ng-template #noGroups>
+      <div class="empty-state">
+        <mat-icon class="empty-icon">group</mat-icon>
+        <h2>No groups yet</h2>
+        <p>Create a group to start tracking shared expenses</p>
+        <button mat-raised-button class="add-group-btn" (click)="openAddGroupDialog()">
+          <mat-icon>add</mat-icon>
+          <span>Add Group</span>
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</div>

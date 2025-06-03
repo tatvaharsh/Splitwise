@@ -21,8 +21,10 @@ export interface acceptedFriends{
 }
 
 export interface pendingFriends{
-  id:string;
-  name: string;
+  fromId:string;
+  fromName: string;
+  toId:string;
+  toName: string; 
 }
 
 export interface GetExpenseByGroupId {

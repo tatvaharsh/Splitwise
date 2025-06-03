@@ -8,6 +8,8 @@ import { MatDialog } from "@angular/material/dialog"
 import { MatCardModule } from "@angular/material/card"
 import { MatIconModule } from "@angular/material/icon"
 import { CommonModule } from "@angular/common"
+import { LocalStorageService } from "../../services/storage.service"
+import { IJwtPayload } from "../../models/auth.model"
 
 @Component({
   selector: "app-friends",
@@ -18,16 +20,20 @@ import { CommonModule } from "@angular/common"
 })
 export class FriendsComponent implements OnInit {
   friends!: FriendResponse
-
+  currentUserId: string | null = null;
   constructor(
     private friendService: FriendService,
     private router: Router,
     private dialog: MatDialog,
+    private storageService: LocalStorageService
   ) {
 
   }
 
   ngOnInit(): void {
+    const tokenPayload: IJwtPayload | null = this.storageService.getDecodedToken();
+    this.currentUserId = tokenPayload?.UserId || null;
+    console.log("Current User ID:", this.currentUserId);
     this.friendService.getAllFriendDetail().subscribe((res) => {
       this.friends = res.content;
       console.log(this.friends);

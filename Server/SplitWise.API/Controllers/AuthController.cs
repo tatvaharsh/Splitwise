@@ -22,10 +22,6 @@ public class AuthController(IAuthService authService, IJwtService jwtService)  :
         }
 
         var result = await _authService.RegisterAsync(request);
-
-        if (result != "Registration successful.")
-            return BadRequest(new { Message = result });
-
         return SuccessResponse(content: result);
     }
 

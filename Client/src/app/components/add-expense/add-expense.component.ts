@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Expense, Group, Member } from '../../models/expense.model';
 import { ExpenseService } from '../../services/expense.service';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { LocalStorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-add-expense',
@@ -14,6 +15,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 })
 export class AddExpenseComponent implements OnInit {
   constructor(private expenseService: ExpenseService,
+    private storageService: LocalStorageService, 
     private dialogRef: MatDialogRef<AddExpenseComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { expenseId?: string } 
   ) {}
@@ -26,8 +28,12 @@ export class AddExpenseComponent implements OnInit {
   groupMembers: { id?: string; name: string }[] = [];
   remainingAmount: number = 0;
   expenseDateString: string = '';
+  currentUserId: string = '';
   selectedType: 'group' | 'friend' | null = null;
   ngOnInit(): void {
+    const decoded = this.storageService.getDecodedToken();
+    this.currentUserId = decoded?.UserId || '';
+
     this.FetchDropDownList();
 
     if (this.data?.expenseId) {
@@ -62,7 +68,7 @@ export class AddExpenseComponent implements OnInit {
         //todo 
         if (!data.groupId) {
           const otherMember = data.splits.find(
-            (s: any) => s.userId !== '78c89439-8cb5-4e93-8565-de9b7cf6c6ae'
+            (s: any) => s.userId !== this.currentUserId
           );
           if (otherMember) {
             data.groupId = otherMember.userId; // Treat this as a friendId in UI
@@ -102,7 +108,7 @@ export class AddExpenseComponent implements OnInit {
         if (selectedFriend) {
           this.groupMembers = [
             // TODO: Replace 'You' with actual logged-in user info dynamically
-            { id: '78c89439-8cb5-4e93-8565-de9b7cf6c6ae', name: 'You' },
+            { id: this.currentUserId, name: 'You' },
             { id: selectedFriend.id, name: selectedFriend.name }
           ];
         }

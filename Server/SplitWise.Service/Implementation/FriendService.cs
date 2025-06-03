@@ -202,125 +202,98 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
             .Distinct()
             .ToList();
 
-        // Step 2: Get user's group memberships
-        var userGroups = await _groupMemberService.GetListAsync(x => x.Memberid == userId && !x.Isdeleted);
-        var userGroupIds = userGroups.Select(g => g.Groupid).ToList();
-
-        // Step 3: Get all members of those groups
-        var allGroupMembers = await _groupMemberService.GetListAsync(x =>
-            userGroupIds.Contains(x.Groupid) && !x.Isdeleted
-        );
-
-        // Step 4: Group to members map
-        var groupToMembers = allGroupMembers
-            .GroupBy(g => g.Groupid)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Memberid).ToList());
-
-        // Step 5: Global balances map
-        Dictionary<Guid, decimal> globalBalances = new();
-
-        foreach (var groupId in userGroupIds)
-        {
-            var groupMembers = groupToMembers[groupId];
-
-            if (!groupMembers.Any(id => friendIds.Contains(id)))
-                continue;
-
-            var groupBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId.Value);
-
-            var transactions = await _transactionService.GetListAsync(
-                t => t.Groupid == groupId && !t.Isdeleted
-            );
-
-            foreach (var t in transactions)
-            {
-                if (t.Payerid.HasValue)
-                    groupBalances[t.Payerid.Value] += t.Amount;
-
-                if (t.Receiverid.HasValue)
-                    groupBalances[t.Receiverid.Value] -= t.Amount;
-            }
-
-            foreach (var kv in groupBalances)
-            {
-                if (!globalBalances.ContainsKey(kv.Key))
-                    globalBalances[kv.Key] = 0;
-
-                globalBalances[kv.Key] += kv.Value;
-            }
-        }
-
-        // Step 6: Add 1-on-1 activities (non-group) using ActivitySplit
-        var directActivities = await _activityService.GetListAsync(a =>
-            !a.Groupid.HasValue && !a.Isdeleted &&
-            (a.Paidbyid == userId || friendIds.Contains(a.Paidbyid.Value))
-        );
-
-        foreach (var activity in directActivities)
-        {
-            var payerId = activity.Paidbyid.Value;
-            var totalAmount = activity.Amount;
-
-            var splits = await _expenseService.GetListAsync(x => x.Activityid == activity.Id);
-
-            if (!globalBalances.ContainsKey(payerId))
-                globalBalances[payerId] = 0;
-            globalBalances[payerId] += (totalAmount ?? 0m);
-
-            foreach (var split in splits)
-            {
-                if (split.Userid.HasValue)
-                {
-                    if (!globalBalances.ContainsKey(split.Userid.Value))
-                        globalBalances[split.Userid.Value] = 0;
-                    globalBalances[split.Userid.Value] -= split.Splitamount;
-                }
-            }
-        }
-
-        // 🔄 NEW: Step 6.1 — Add 1-on-1 direct settlements (non-group transactions)
-        var directTransactions = await _transactionService.GetListAsync(
-            t => t.Groupid == null && !t.Isdeleted &&
-                 (t.Payerid == userId || t.Receiverid == userId ||
-                  friendIds.Contains(t.Payerid.Value) || friendIds.Contains(t.Receiverid.Value))
-        );
-
-        foreach (var t in directTransactions)
-        {
-            if (t.Payerid.HasValue)
-            {
-                if (!globalBalances.ContainsKey(t.Payerid.Value))
-                    globalBalances[t.Payerid.Value] = 0;
-                globalBalances[t.Payerid.Value] += t.Amount;
-            }
-
-            if (t.Receiverid.HasValue)
-            {
-                if (!globalBalances.ContainsKey(t.Receiverid.Value))
-                    globalBalances[t.Receiverid.Value] = 0;
-                globalBalances[t.Receiverid.Value] -= t.Amount;
-            }
-        }
-
-        // Step 7: Simplify balances
-        var settlements = _activityService.CalculateMinimalSettlements(globalBalances);
-
-        // Step 8: Filter only between user and their friends
+        // Step 2: Calculate balances for each friend
         var friendBalances = new Dictionary<Guid, decimal>();
 
-        foreach (var s in settlements)
+        foreach (var friendId in friendIds)
         {
-            if (s.PayerId == userId && friendIds.Contains(s.ReceiverId))
+            decimal totalOweLent = 0;
+
+            // 1️⃣ Group-wise minimal settlements
+            var userGroups = await _groupMemberService.GetListAsync(x => x.Memberid == userId && !x.Isdeleted);
+            var friendGroups = await _groupMemberService.GetListAsync(x => x.Memberid == friendId && !x.Isdeleted);
+
+            var sharedGroupIds = userGroups.Select(x => x.Groupid)
+                                           .Intersect(friendGroups.Select(x => x.Groupid))
+                                           .ToList();
+
+            foreach (var groupId in sharedGroupIds)
             {
-                friendBalances[s.ReceiverId] = -s.Amount;
+                var netBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId.Value);
+
+                // Apply transactions
+                var completedTransactions = await _transactionService.GetListAsync(t => t.Groupid == groupId && !t.Isdeleted);
+                foreach (var txn in completedTransactions)
+                {
+                    if (txn.Payerid.HasValue && netBalances.ContainsKey(txn.Payerid.Value))
+                        netBalances[txn.Payerid.Value] += txn.Amount;
+
+                    if (txn.Receiverid.HasValue && netBalances.ContainsKey(txn.Receiverid.Value))
+                        netBalances[txn.Receiverid.Value] -= txn.Amount;
+                }
+
+                var settlements = _activityService.CalculateMinimalSettlements(netBalances);
+                foreach (var s in settlements)
+                {
+                    if ((s.PayerId == userId && s.ReceiverId == friendId) ||
+                        (s.PayerId == friendId && s.ReceiverId == userId))
+                    {
+                        if (s.PayerId == userId)
+                            totalOweLent -= s.Amount; // you owe
+                        else
+                            totalOweLent += s.Amount; // friend owes
+                    }
+                }
             }
-            else if (s.ReceiverId == userId && friendIds.Contains(s.PayerId))
+
+            // 2️⃣ Direct transactions (1:1)
+            var directExpenses = await _activityService.GetListAsync(
+                x => !x.Isdeleted && x.Groupid == null &&
+                (
+                    (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == friendId)) ||
+                    (x.Paidbyid == friendId && x.ActivitySplits.Any(s => s.Userid == userId))
+                ),
+                query => query.Include(a => a.ActivitySplits).Include(a => a.Paidby)
+            );
+
+            foreach (var exp in directExpenses)
             {
-                friendBalances[s.PayerId] = s.Amount;
+                decimal oweLent = 0;
+                if (exp.Paidbyid == userId)
+                {
+                    oweLent = exp.ActivitySplits.Where(s => s.Userid == friendId).Sum(s => s.Splitamount);
+                }
+                else if (exp.Paidbyid == friendId)
+                {
+                    oweLent = -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount);
+                }
+
+                totalOweLent += oweLent;
             }
+
+            var oneToOneTxns = await _transactionService.GetListAsync(
+                x => x.Groupid == null && (
+                    (x.Payerid == userId && x.Receiverid == friendId) ||
+                    (x.Payerid == friendId && x.Receiverid == userId)
+                )
+            );
+
+            foreach (var txn in oneToOneTxns)
+            {
+                if (txn.Payerid == userId)
+                {
+                    totalOweLent += txn.Amount; // you paid
+                }
+                else if (txn.Payerid == friendId)
+                {
+                    totalOweLent -= txn.Amount; // friend paid you
+                }
+            }
+
+            friendBalances[friendId.Value] = totalOweLent;
         }
 
-        // Step 9: Build response
+        // Step 3: Build response
         var acceptedFriends = new List<AcceptedFriendResponse>();
 
         foreach (var friendId in friendIds)
@@ -346,16 +319,12 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         var pendingFriends = pendingEntities
             .Select(p =>
             {
-                var friendId = p.Userid == userId ? p.Friendid : p.Userid;
-                var friendName = p.Userid == userId ? p.Friend?.Username : p.User?.Username;
-
-                if (friendId == null || friendName == null)
-                    return null;
-
                 return new PendingFriendResponse
                 {
-                    Id = friendId.Value,
-                    Name = friendName
+                    FromId = p.Userid.Value,
+                    FromName = p.User.Username,
+                    ToId = p.Friendid.Value,
+                    ToName = p.Friend.Username
                 };
             })
             .Where(x => x != null)

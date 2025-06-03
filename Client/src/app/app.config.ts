@@ -8,7 +8,7 @@ import { apiInterceptor } from './generic/interceptors/api.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([apiInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([apiInterceptor])),
     provideRouter(
       routes,
       withRouterConfig({
