@@ -64,7 +64,8 @@ export class SettleUpDialogComponent {
   
     this.settleupservice.SettleUpGroup(payload).subscribe({
       next: (response) => {
-        this.onClose(); // Close dialog or reset form
+        this.onClose();
+        window.location.reload();
       }
     });
   }

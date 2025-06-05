@@ -21,6 +21,7 @@ import { DeleteConfirmationDialogComponent } from "../../generic/delete-confirma
 import { DeleteConfirmationService } from "../../services/DeleteConfirmationService"
 import { FriendService } from "../../services/friend.service"
 import { SettleUpDialogComponent } from "../settle-up-dialog/settle-up-dialog.component"
+import { LocalStorageService } from "../../services/storage.service"
 
 @Component({
   selector: "app-group-detail",
@@ -39,6 +40,7 @@ export class GroupDetailComponent implements OnInit {
   expenseId: string = '';
   isDialogOpen = false;
   groupId: string = '';
+  currentUserId:  string = '';
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -47,6 +49,7 @@ export class GroupDetailComponent implements OnInit {
     private friendService: FriendService,
     private dialog: MatDialog,
     private deleteService: DeleteConfirmationService,
+    private storageService: LocalStorageService
   ) {
     this.route.paramMap.subscribe(params => {
         const groupId = params.get("id") || "";
@@ -66,7 +69,12 @@ export class GroupDetailComponent implements OnInit {
       });
     }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const decoded = this.storageService.getDecodedToken();
+    this.currentUserId = decoded?.UserId || '';
+
+
+  }
 
   openAddExpenseDialog(group: Group): void {
     this.dialog.open(AddExpenseComponent, {
@@ -148,12 +156,18 @@ export class GroupDetailComponent implements OnInit {
       });
     }
     else{
-      this.groupService.deleteGroup(this.group.id).subscribe({
-        next: () => {
-          this.deleteService.close();
-          this.router.navigate(['/groups']);
-        }
-      });
+      if(this.amount === 0){
+        this.groupService.deleteGroup(this.group.id).subscribe({
+          next: () => {
+            this.deleteService.close();
+            this.router.navigate(['/groups']);
+          }
+        });
+      }else{
+        alert('Cannot delete group. There are outstanding expenses in this group.');
+        this.deleteService.close();
+      }
+
     }
   }
 

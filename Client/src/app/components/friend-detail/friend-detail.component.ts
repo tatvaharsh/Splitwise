@@ -138,4 +138,8 @@ export class FriendDetailComponent implements OnInit {
   closeDialog(): void {
     this.isDialogOpen = false
   }
+
+  getAbsoluteValue(amount: number): number {  
+    return Math.abs(amount);
+  }
 }

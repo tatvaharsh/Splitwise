@@ -40,6 +40,7 @@ export class AddFriendComponent implements OnInit {
       this.friendService.addFriend(this.friendForm.value).subscribe({
         next: () => {
           this.dialogRef.close(); 
+          window.location.reload(); 
         }
       });
     }

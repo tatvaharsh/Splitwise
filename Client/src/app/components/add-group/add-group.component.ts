@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { ReactiveFormsModule } from "@angular/forms";
 import { HttpClientModule } from "@angular/common/http";
+import { Router } from "@angular/router";
 
 @Component({
   selector: "app-add-group",
@@ -36,8 +37,7 @@ export class AddGroupComponent implements OnInit {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<AddGroupComponent>,
     private groupService: GroupService,
-    private userService: UserService,
-    private activityService: ActivityService,
+    private route: Router,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.groupForm = this.fb.group({
@@ -83,7 +83,11 @@ export class AddGroupComponent implements OnInit {
           formData.append("AutoLogo", this.selectedFile);
         }
         this.groupService.updateGroup(this.data.id, formData).subscribe({
-          next: () => this.dialogRef.close()
+          next: () => {
+            this.dialogRef.close();
+            // this.route.navigate([`/groups/${this.data.id}`]); 
+            window.location.reload()
+          }
         });
       }else{
         formData.append("GroupName", this.groupForm.get("name")?.value);
@@ -93,6 +97,8 @@ export class AddGroupComponent implements OnInit {
         this.groupService.createGroup(formData).subscribe({
           next: (response) => {
             this.dialogRef.close();
+            this.route.navigate([`/groups`]); 
+            window.location.reload();
           },
           error: (error) => {
             console.error("Error creating group:", error);

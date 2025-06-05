@@ -5,7 +5,7 @@
       <form [formGroup]="groupForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Group Name</mat-label>
-          <input matInput formControlName="name" placeholder="Enter group name">
+          <input matInput formControlName="name" placeholder="Enter group name" maxlength="50">
           <mat-error *ngIf="groupForm.get('name')?.hasError('required')">
             Group name is required
           </mat-error>

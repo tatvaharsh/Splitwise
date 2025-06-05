@@ -25,7 +25,7 @@
         {{ friend.oweLentAmountOverall > 0 ? 'They owe you' : (friend.oweLentAmountOverall < 0 ? 'You owe' : 'All settled up') }}
       </span>
       <span class="balance-amount" *ngIf="friend.oweLentAmountOverall !== 0">
-        ₹{{ friend.oweLentAmountOverall | number: '1.2-2' }}
+        ₹{{ getAbsoluteValue(friend.oweLentAmountOverall) | number: '1.2-2' }}
       </span>
     </div>
 

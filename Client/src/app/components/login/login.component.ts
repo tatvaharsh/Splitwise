@@ -47,6 +47,11 @@ export class LoginComponent {
           // Navigate based on role, default to '/groups'
           this.router.navigate(['/groups']);
           this.isLoading = false;
+        },
+        error: (error) => {
+          this.isLoading = false;
+          // Optionally, handle the error (e.g., show a notification)
+          console.error('Login failed', error);
         }
       });
     } else {

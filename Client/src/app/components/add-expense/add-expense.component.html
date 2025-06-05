@@ -1,52 +1,59 @@
 <div class="add-expense-container">
   <div class="expense-header">
-    <button (click)="goBack()" [disabled]="step === 1">&larr;</button>
+    <button (click)="goBack()" [disabled]="step === 1">←</button>
     <h2>Add Expense</h2>
-    <button *ngIf="step === 3" (click)="saveExpense()">&#10003;</button>
+    <button *ngIf="step === 3" (click)="saveExpense()" [disabled]="remainingAmount !== 0">✓</button>
   </div>
 
   <div class="expense-content">
     <!-- Step 1: Basic Info -->
     <div *ngIf="expense">
-    <div *ngIf="step === 1">
-      <div class="form-group">
-        <label>Description</label>
-        <input type="text" [(ngModel)]="expense.description" placeholder="e.g., Taxi" />
-      </div>
+      <div *ngIf="step === 1">
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" [(ngModel)]="expense.description" (ngModelChange)="validateField('description')" placeholder="e.g., Taxi" maxlength="50"/>
+          <span class="error" *ngIf="errors['description']">{{ errors['description'] }}</span>
+        </div>
 
-      <div class="form-group">
-        <label>Amount</label>
-        <input type="number" [(ngModel)]="expense.amount" placeholder="₹0.00" />
-      </div>
+        <div class="form-group">
+          <label>Amount</label>
+          <input type="number" [(ngModel)]="expense.amount" (ngModelChange)="validateField('amount')" placeholder="₹0.00" min="0" step="0.01" />
+          <span class="error" *ngIf="errors['amount']">{{ errors['amount'] }}</span>
+        </div>
 
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" [(ngModel)]="expense.date" />
-      </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="expense.date" (ngModelChange)="validateField('date')" [max]="today" />
+          <span class="error" *ngIf="errors['date']">{{ errors['date'] }}</span>
+        </div>
 
-      <div class="form-group">
-        <label>Group or Friend</label>
-        <select [(ngModel)]="expense.groupId">
-          <option [ngValue]="null">-- Select Group or Friend --</option>
-          <optgroup label="Groups">
-            <option *ngFor="let group of groups" [ngValue]="group.id">{{ group.name }}</option>
-          </optgroup>
-          <optgroup label="Friends">
-            <option *ngFor="let friend of friends" [ngValue]="friend.id">{{ friend.name }}</option>
-          </optgroup>
-        </select>
-      </div>
+        <div class="form-group">
+          <label>Group or Friend</label>
+          <select [(ngModel)]="expense.groupId" (ngModelChange)="validateField('groupId')">
+            <option [ngValue]="null">-- Select Group or Friend --</option>
+            <optgroup label="Groups">
+              <option *ngFor="let group of groups" [ngValue]="group.id">{{ group.name }}</option>
+            </optgroup>
+            <optgroup label="Friends">
+              <option *ngFor="let friend of friends" [ngValue]="friend.id">{{ friend.name }}</option>
+            </optgroup>
+          </select>
+          <span class="error" *ngIf="errors['groupId']">{{ errors['groupId'] }}</span>
+        </div>
 
-      <button (click)="goNext()">Next</button>
+        <button (click)="goNext()">Next</button>
+      </div>
     </div>
-  </div>
 
     <!-- Step 2: Paid By -->
     <div *ngIf="step === 2">
-      <label *ngFor="let member of groupMembers">
-        <input type="radio" name="paidBy" [value]="member.id" [(ngModel)]="expense.paidById" />
-        {{ member.name }}
-      </label>
+      <div class="form-group">
+        <label *ngFor="let member of groupMembers">
+          <input type="radio" name="paidBy" [value]="member.id" [(ngModel)]="expense.paidById" (ngModelChange)="validateField('paidById')" />
+          {{ member.name }}
+        </label>
+        <span class="error" *ngIf="errors['paidById']">{{ errors['paidById'] }}</span>
+      </div>
 
       <div class="actions">
         <button (click)="goBack()">Back</button>
@@ -76,7 +83,7 @@
       <div *ngIf="splitType === 'unequal'">
         <div *ngFor="let person of expense.splits">
           <label>{{ person.name }}</label>
-          <input type="number" [(ngModel)]="person.splitAmount" (input)="trackUnequalSplit()" placeholder="₹0.00" />
+          <input type="number" [(ngModel)]="person.splitAmount" (input)="trackUnequalSplit()" placeholder="₹0.00" min="0" step="0.01" />
         </div>
       </div>
 
@@ -84,18 +91,19 @@
       <div *ngIf="splitType === 'percent'">
         <div *ngFor="let person of expense.splits">
           <label>{{ person.name }}</label>
-          <input type="number" [(ngModel)]="person.percent" (input)="calculateFromPercent()" placeholder="%" />
+          <input type="number" [(ngModel)]="person.percent" (input)="calculateFromPercent()" placeholder="%" min="0" max="100" step="0.01" />
           <span>₹{{ person.splitAmount }}</span>
         </div>
       </div>
 
-      <div class="amount-warning">
+      <div class="amount-warning" [class.error]="remainingAmount !== 0 || errors['split'] || errors['percent']">
         Remaining: ₹{{ remainingAmount }}
+        <span *ngIf="errors['split'] || errors['percent']" class="error">{{ errors['split'] || errors['percent'] }}</span>
       </div>
 
       <div class="actions">
         <button (click)="goBack()">Back</button>
-        <button (click)="saveExpense()">Save</button>
+        <button (click)="saveExpense()" [disabled]="remainingAmount !== 0">Save</button>
       </div>
     </div>
   </div>

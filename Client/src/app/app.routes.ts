@@ -8,6 +8,7 @@ import { ProfileComponent } from './components/profile/profile.component';
 import {LoginComponent} from './components/login/login.component';
 import { SignupComponent } from './components/sign-up/sign-up.component';
 import { MainLayoutComponent } from './generic/main-layout/main-layout.component';
+import { authGuard } from './generic/guard/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -17,6 +18,7 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
+    canActivate: [authGuard], 
     children: [
       { path: 'groups', component: GroupsComponent },
       { path: 'groups/:id', component: GroupDetailComponent },

@@ -129,10 +129,21 @@
                 <mat-icon class="member-avatar">person</mat-icon>
                 <span class="member-name">{{ member.name }}</span>
               </div>
-              <button mat-icon-button color="warn" (click)="removeMember(member.id, group.id)">
-                <mat-icon>delete</mat-icon>
-              </button>
+            
+              <!-- Wrapper to reserve space for the button -->
+              <div class="delete-button-wrapper">
+                <button *ngIf="member.id !== currentUserId"
+                        mat-icon-button
+                        color="warn"
+                        (click)="removeMember(member.id, group.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+            
+                <!-- Empty button space for layout consistency -->
+                <span *ngIf="member.id === currentUserId" class="placeholder-button"></span>
+              </div>
             </div>
+            
           </div>
       
           <div class="empty-state">
@@ -143,9 +154,7 @@
             </button>
           </div>
         </div>
-    
-      </mat-tab>
-      
+      </mat-tab>      
       
     </mat-tab-group>
   

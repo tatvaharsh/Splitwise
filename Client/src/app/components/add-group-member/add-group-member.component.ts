@@ -65,6 +65,7 @@ export class AddGroupMemberComponent implements OnInit {
         this.friendService.addMemberToGroup(selectedUser.id, this.groupId).subscribe({
           next: () => {
             this.dialogRef.close();
+            window.location.reload();
           }
         });
       }

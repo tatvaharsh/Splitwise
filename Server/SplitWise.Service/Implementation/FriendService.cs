@@ -124,36 +124,54 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
 
     public async Task<bool> CheckOutstanding(Guid memberId, Guid groupId)
     {
+        // 1. Fetch all relevant group activities
         List<Activity> groupEntities = await _activityService.GetListAsync(
-                x => x.Groupid == groupId && x.Paidbyid != null,
-                query => query.Include(x => x.ActivitySplits)
-            );
+            x => x.Groupid == groupId && x.Paidbyid != null,
+            query => query.Include(x => x.ActivitySplits)
+        );
 
-        decimal totalOweLent = 0;
+        // 2. Fetch all transactions in the group related to this member
+        List<Transaction> memberTransactions = await _transactionService.GetListAsync(
+            x => x.Groupid == groupId && (x.Receiverid == memberId || x.Payerid == memberId)
+        );
 
-        foreach (var groupEntity in groupEntities)
+        decimal netBalance = 0;
+
+        // 3. Calculate total from activities
+        foreach (var activity in groupEntities)
         {
-            decimal owelentAmount = 0;
-
-            if (groupEntity.Paidbyid == memberId)
+            if (activity.Paidbyid == memberId)
             {
-                // User lent to others
-                owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount)
-                    - groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == memberId)?.Splitamount ?? 0;
+                // Member paid the total, so others owe him
+                decimal totalOwedByOthers = activity.ActivitySplits.Sum(s => s.Splitamount) 
+                    - activity.ActivitySplits.FirstOrDefault(s => s.Userid == memberId)?.Splitamount ?? 0;
+                netBalance += totalOwedByOthers;
             }
             else
             {
-                // User owes
-                owelentAmount = groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == memberId)?.Splitamount ?? 0;
-                owelentAmount *= -1;
+                // Member owes to someone else
+                decimal amountOwed = activity.ActivitySplits.FirstOrDefault(s => s.Userid == memberId)?.Splitamount ?? 0;
+                netBalance -= amountOwed;
             }
-
-            totalOweLent += owelentAmount;
         }
 
-        // Return true if outstanding exists (positive or negative), false if settled
-        return totalOweLent != 0;
+        // 4. Adjust balance based on transactions (settlements)
+        foreach (var tx in memberTransactions)
+        {
+            if (tx.Payerid == memberId)
+            {
+                // Member paid someone -> decrease what he owes
+                netBalance += tx.Amount;
+            }
+            else if (tx.Receiverid == memberId)
+            {
+                // Member received money -> decrease what others owe him
+                netBalance -= tx.Amount;
+            }
+        }
 
+        // 5. If net balance is not zero, then there's still outstanding
+        return netBalance != 0;
     }
 
 
