@@ -94,7 +94,7 @@ export class FriendDetailComponent implements OnInit {
     }
   }
 
-  formatDate(date: string): string {
+  formatDate(date: Date): string {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

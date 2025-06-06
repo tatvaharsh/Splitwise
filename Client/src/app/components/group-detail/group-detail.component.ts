@@ -41,6 +41,7 @@ export class GroupDetailComponent implements OnInit {
   isDialogOpen = false;
   groupId: string = '';
   currentUserId:  string = '';
+Math: any
   constructor(
     private route: ActivatedRoute,
     private router: Router,

@@ -13,10 +13,12 @@ export interface Member {
 
 export interface getExpensesByGroupId{
   id:string;
+  type : string;
   description: string;
   amount: number;
   date: Date;
   payerName:string;
+  receiverName:string;
   oweLentAmount:number;
   oweLentAmountOverall:number;
 }

@@ -96,6 +96,121 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse<object>(message: await _activityService.DeleteAsync(id));
     }
 
+     [HttpGet("get/{id}")]
+    public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
+    {
+        Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException("User not authenticated.");
+
+        // 1. Fetch activity (expense) data, including activity splits and associated user details
+        List<Activity> groupExpenses = await _activityService.GetListAsync(
+            x => x.Groupid == id && x.Paidbyid != null,
+            query => query.Include(x => x.ActivitySplits).ThenInclude(x => x.User)
+        ) ?? throw new Exception("Could not fetch group expenses.");
+
+        // 2. Fetch settle-up transaction data, including payer and receiver user details
+        List<Transaction> groupTransactions = await _transactionService.GetListAsync(
+            x => x.Groupid == id,
+            query => query.Include(x => x.Payer).Include(x => x.Receiver)
+        ) ?? throw new Exception("Could not fetch group transactions.");
+
+        // List to hold all combined expense and transaction items
+        List<GroupItemResponse> allGroupItems = new List<GroupItemResponse>();
+
+        // 3. Process Expense entries and map to GroupItemResponse
+        var expenseResponses = groupExpenses
+            .Select(groupEntity =>
+            {
+                decimal owelentAmount = 0;
+
+                // Calculate the individual owe/lent amount for the current user for this expense
+                if (groupEntity.Paidbyid == currentUserId)
+                {
+                    // If current user paid, they lent the total amount minus their own share
+                    owelentAmount = (groupEntity.Amount ?? 0) - (groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0);
+                }
+                else
+                {
+                    // If current user didn't pay, they owe their share (represented as negative)
+                    owelentAmount = (groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0);
+                    owelentAmount *= -1;
+                }
+
+                return new GroupItemResponse
+                {
+                    Id = groupEntity.Id,
+                    Type = "Expense",
+                    Description = groupEntity.Description,
+                    PayerName = groupEntity.Paidbyid == currentUserId
+                        ? "You"
+                        : groupEntity.ActivitySplits.FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
+                    ReceiverName = null, // Not applicable for expenses
+                    Amount = groupEntity.Amount ?? 0, // Use null-coalescing to handle potential null values
+                    Date = groupEntity.Time ?? DateTime.UtcNow, // Use expense time for sorting
+                    OweLentAmount = owelentAmount, // This is the impact of this specific expense
+                    OweLentAmountOverall = 0 ,
+                    OrderDate = groupEntity.Time ?? DateTime.UtcNow // Use expense time for sorting 
+                };
+            }).ToList();
+
+        allGroupItems.AddRange(expenseResponses);
+
+        // 4. Process Settle-Up Transactions and map to GroupItemResponse
+        var transactionResponses = groupTransactions
+            .Select(txn =>
+            {
+                decimal owelentAmount = 0;
+
+                // Calculate the individual owe/lent amount for the current user for this transaction
+                if (txn.Payerid == currentUserId)
+                {
+                    // Current user paid in a settle-up. This reduces their "owed" amount or increases their "lent" amount.
+                    // Represents a positive impact on their net balance.
+                    owelentAmount = txn.Amount;
+                }
+                else if (txn.Receiverid == currentUserId)
+                {
+                    // Current user received in a settle-up. This increases their "owed" amount or reduces their "lent" amount.
+                    // Represents a negative impact on their net balance.
+                    owelentAmount = -txn.Amount;
+                }
+                // If neither payer nor receiver is current user, owelentAmount remains 0, which is correct.
+
+                string payerName = txn.Payerid == currentUserId ? "You" : txn.Payer?.Username;
+                string receiverName = txn.Receiverid == currentUserId ? "you" : txn.Receiver?.Username; // "you" (lowercase) for better sentence flow
+
+                return new GroupItemResponse
+                {
+                    Id = txn.Id,
+                    Type = "SettleUp",
+                    Description = $"{payerName} settled {receiverName}", // Descriptive text for settle-up
+                    PayerName = payerName,
+                    ReceiverName = receiverName,
+                    Amount = txn.Amount,
+                    Date = txn.Time ?? DateTime.UtcNow, // Use transaction time for sorting
+                    OweLentAmount = owelentAmount, // This is the impact of this specific transaction
+                    OweLentAmountOverall = 0 ,
+                    OrderDate = txn.Time ?? DateTime.UtcNow // Use transaction time for sorting 
+                };
+            }).ToList();
+
+        allGroupItems.AddRange(transactionResponses);
+
+        // 5. Sort the combined list by Date (most recent first)
+        allGroupItems = allGroupItems.OrderByDescending(item => item.Date).ToList();
+
+        // 6. Calculate the final overall owe/lent balance for the current user
+        // This sum correctly accounts for all expenses and settle-up transactions.
+        decimal totalOweLentOverall = allGroupItems.Sum(item => item.OweLentAmount);
+
+        // 7. Update the OweLentAmountOverall for all items in the list to reflect the final balance
+        foreach (var item in allGroupItems)
+        {
+            item.OweLentAmountOverall = totalOweLentOverall;
+        }
+
+        return SuccessResponse(content: allGroupItems);
+    }
+
     [HttpGet("getbyexpenseid/{id:Guid}")]
     public async Task<IActionResult> GetByExpenseId([FromRoute] Guid id)
     {
@@ -103,89 +218,89 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse(content: response);
     }
 
-    [HttpGet("get/{id}")]
-    public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
-    {
-        Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+    // [HttpGet("get/{id}")]
+    // public async Task<IActionResult> GetExpenseByGroupId([FromRoute] Guid id)
+    // {
+    //     Guid currentUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
 
-        // Fetch activity data
-        List<Activity> groupEntities = await _activityService.GetListAsync(
-            x => x.Groupid == id && x.Paidbyid != null,
-            query => query.Include(x => x.ActivitySplits).ThenInclude(x => x.User)
-        ) ?? throw new Exception();
+    //     // Fetch activity data
+    //     List<Activity> groupEntities = await _activityService.GetListAsync(
+    //         x => x.Groupid == id && x.Paidbyid != null,
+    //         query => query.Include(x => x.ActivitySplits).ThenInclude(x => x.User)
+    //     ) ?? throw new Exception();
 
-        // Fetch settle-up transactions in this group
-        List<Transaction> groupTransactions = await _transactionService.GetListAsync(
-            x => x.Groupid == id
-        );
+    //     // Fetch settle-up transactions in this group
+    //     List<Transaction> groupTransactions = await _transactionService.GetListAsync(
+    //         x => x.Groupid == id
+    //     );
 
-        decimal totalOweLent = 0;
+    //     decimal totalOweLent = 0;
 
-        // Expense entries
-        var groupResponses = groupEntities
-            .OrderByDescending(g => g.CreatedAt)
-            .Select(groupEntity =>
-            {
-                decimal owelentAmount = 0;
+    //     // Expense entries
+    //     var groupResponses = groupEntities
+    //         .OrderByDescending(g => g.CreatedAt)
+    //         .Select(groupEntity =>
+    //         {
+    //             decimal owelentAmount = 0;
 
-                if (groupEntity.Paidbyid == currentUserId)
-                {
-                    owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount)
-                        - groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
-                }
-                else
-                {
-                    owelentAmount = groupEntity.ActivitySplits
-                        .FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
-                    owelentAmount *= -1;
-                }
+    //             if (groupEntity.Paidbyid == currentUserId)
+    //             {
+    //                 owelentAmount = groupEntity.ActivitySplits.Sum(split => split.Splitamount)
+    //                     - groupEntity.ActivitySplits.FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
+    //             }
+    //             else
+    //             {
+    //                 owelentAmount = groupEntity.ActivitySplits
+    //                     .FirstOrDefault(split => split.Userid == currentUserId)?.Splitamount ?? 0;
+    //                 owelentAmount *= -1;
+    //             }
 
-                totalOweLent += owelentAmount;
+    //             totalOweLent += owelentAmount;
 
-                return new GetExpenseByGroupId
-                {
-                    Id = groupEntity.Id,
-                    Description = groupEntity.Description,
-                    PayerName = groupEntity.Paidbyid == currentUserId
-                        ? "You"
-                        : groupEntity.ActivitySplits.FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
-                    Amount = groupEntity.Amount,
-                    Date = groupEntity.Time,
-                    OweLentAmount = Math.Abs(owelentAmount),
-                    OweLentAmountOverall = 0
-                };
-            }).ToList();
+    //             return new GetExpenseByGroupId
+    //             {
+    //                 Id = groupEntity.Id,
+    //                 Description = groupEntity.Description,
+    //                 PayerName = groupEntity.Paidbyid == currentUserId
+    //                     ? "You"
+    //                     : groupEntity.ActivitySplits.FirstOrDefault(x => x.Userid == groupEntity.Paidbyid)?.User.Username,
+    //                 Amount = groupEntity.Amount,
+    //                 Date = groupEntity.Time,
+    //                 OweLentAmount = Math.Abs(owelentAmount),
+    //                 OweLentAmountOverall = 0
+    //             };
+    //         }).ToList();
 
-        // Apply transaction adjustments
-        foreach (var txn in groupTransactions)
-        {
-            if (txn.Payerid == currentUserId)
-            {
-                // If you owe money, paying reduces your debt
-                if (totalOweLent < 0)
-                    totalOweLent += txn.Amount;
-                else
-                    totalOweLent -= txn.Amount;
-            }
-            else if (txn.Receiverid == currentUserId)
-            {
-                // If you receive money, your debt is reduced, or your lend is reimbursed
-                if (totalOweLent < 0)
-                    totalOweLent += txn.Amount;
-                else
-                    totalOweLent -= txn.Amount;
-            }
-        }
+    //     // Apply transaction adjustments
+    //     foreach (var txn in groupTransactions)
+    //     {
+    //         if (txn.Payerid == currentUserId)
+    //         {
+    //             // If you owe money, paying reduces your debt
+    //             if (totalOweLent < 0)
+    //                 totalOweLent += txn.Amount;
+    //             else
+    //                 totalOweLent -= txn.Amount;
+    //         }
+    //         else if (txn.Receiverid == currentUserId)
+    //         {
+    //             // If you receive money, your debt is reduced, or your lend is reimbursed
+    //             if (totalOweLent < 0)
+    //                 totalOweLent += txn.Amount;
+    //             else
+    //                 totalOweLent -= txn.Amount;
+    //         }
+    //     }
 
 
-        // Update overall balances
-        foreach (var item in groupResponses)
-        {
-            item.OweLentAmountOverall = totalOweLent;
-        }
+    //     // Update overall balances
+    //     foreach (var item in groupResponses)
+    //     {
+    //         item.OweLentAmountOverall = totalOweLent;
+    //     }
 
-        return SuccessResponse(content: groupResponses);
-    }
+    //     return SuccessResponse(content: groupResponses);
+    // }
 
     [HttpGet("settle-summary/{groupId}")]
     public async Task<IActionResult> GetSettleSummaryAsync([FromRoute] Guid groupId)

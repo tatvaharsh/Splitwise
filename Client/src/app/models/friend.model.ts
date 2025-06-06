@@ -1,3 +1,4 @@
+import { getExpensesByGroupId } from "./group.model"
 import type { User } from "./user.model"
 
 export interface Friend extends User {
@@ -40,7 +41,7 @@ export interface GetExpenseByGroupId {
 export interface GetFriendResponse {
   id: string;                    
   name: string;
-  expenses?: GetExpenseByGroupId[]; 
+  expenses?: getExpensesByGroupId[]; 
   oweLentAmountOverall: number;
 }
 

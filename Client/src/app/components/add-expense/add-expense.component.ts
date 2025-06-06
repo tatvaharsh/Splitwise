@@ -3,8 +3,8 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Expense, Group, Member } from '../../models/expense.model';
 import { ExpenseService } from '../../services/expense.service';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { LocalStorageService } from '../../services/storage.service';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-add-expense',
@@ -21,7 +21,6 @@ export class AddExpenseComponent implements OnInit {
     private dialogRef: MatDialogRef<AddExpenseComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { expenseId?: string } 
   ) {}
-
   step = 1;
   splitType = 'equal';
   groups: Group[] = [];
@@ -161,6 +160,13 @@ export class AddExpenseComponent implements OnInit {
 
       if (this.expense.splits.some(split => split.splitAmount < 0)) {
         this.errors['split'] = 'Split amounts cannot be negative';
+        return false;
+      }
+
+      // New validation: Prevent payer from assigning full amount to themselves
+      const payerSplit = this.expense.splits.find(split => split.userId === this.expense.paidById);
+      if (payerSplit && Math.abs(payerSplit.splitAmount - this.expense.amount) < 0.01) {
+        this.errors['split'] = 'Payer cannot assign the full amount to themselves';
         return false;
       }
     }

@@ -722,153 +722,152 @@ public List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decim
     }
 
     public async Task<GetFriendresponse> GetFriendDetails(Guid id)
+{
+    Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+
+    // Get friendship relation
+    var friendRelation = await GetOneAsync(
+        x => (x.Userid == userId && x.Friendid == id) || (x.Userid == id && x.Friendid == userId),
+        query => query.Include(x => x.User).Include(x => x.Friend)
+    ) ?? throw new Exception("Friend not found");
+
+    var friendUser = friendRelation.Userid == userId ? friendRelation.Friend : friendRelation.User;
+
+    // 1. Fetch 1:1 expenses
+    var directExpenses = await _activityService.GetListAsync(
+        x => !x.Isdeleted && x.Groupid == null &&
+             ((x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+              (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))),
+        query => query.Include(a => a.ActivitySplits).ThenInclude(s => s.User).Include(a => a.Paidby)
+    ) ?? new List<Activity>();
+
+    // 2. Fetch group memberships and common groups
+    var groupMembers = await _groupMemberService.GetListAsync(
+        x => (x.Memberid == userId || x.Memberid == id) && x.Groupid != null,
+        query => query.Include(x => x.Group)
+    );
+
+    var commonGroupIds = groupMembers
+        .GroupBy(x => x.Groupid)
+        .Where(g => g.Count() > 1)
+        .Select(g => g.Key)
+        .ToList();
+
+    // 3. Fetch group expenses
+    var groupExpenses = await _activityService.GetListAsync(
+        x => !x.Isdeleted && x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) &&
+             ((x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+              (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))),
+        query => query.Include(a => a.Group).Include(a => a.ActivitySplits).ThenInclude(s => s.User).Include(a => a.Paidby)
+    ) ?? new List<Activity>();
+
+    // 4. Fetch direct (1:1) settle-up transactions
+    var directTransactions = await _transactionService.GetListAsync(
+        x => x.Groupid == null && !x.Isdeleted &&
+             ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
+        query => query.Include(x => x.Payer).Include(x => x.Receiver)
+    ) ?? new List<Transaction>();
+
+    // 5. Fetch group settle-up transactions
+    var groupTransactions = await _transactionService.GetListAsync(
+        x => x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) && !x.Isdeleted &&
+             ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
+        query => query.Include(x => x.Payer).Include(x => x.Receiver)
+    ) ?? new List<Transaction>();
+
+    // List to hold all combined expense and transaction items
+    List<GroupItemResponse> allItems = new List<GroupItemResponse>();
+
+    // 6. Process expense entries (direct and group) and map to GetExpenseByGroupId
+    var expenseResponses = directExpenses.Concat(groupExpenses).Select(exp =>
     {
-        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-
-        // Get friendship relation
-        var friendRelation = await GetOneAsync(
-            x => (x.Userid == userId && x.Friendid == id) || (x.Userid == id && x.Friendid == userId),
-            query => query.Include(x => x.User).Include(x => x.Friend)
-        ) ?? throw new Exception("Friend not found");
-
-        var friendUser = friendRelation.Userid == userId ? friendRelation.Friend : friendRelation.User;
-
-        // 1:1 expenses
-        var directExpenses = await _activityService.GetListAsync(
-            x => !x.Isdeleted && x.Groupid == null &&
-            (
-                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
-                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
-            ),
-            query => query.Include(a => a.ActivitySplits).Include(a => a.Paidby)
-        );
-
-        // Group memberships
-        var groupMembers = await _groupMemberService.GetListAsync(
-            x => (x.Memberid == userId || x.Memberid == id) && x.Groupid != null,
-            query => query.Include(x => x.Group)
-        );
-
-        var commonGroupIds = groupMembers
-            .GroupBy(x => x.Groupid)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-
-        // Group expenses
-        var groupExpenses = await _activityService.GetListAsync(
-            x => !x.Isdeleted && x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) &&
-            (
-                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
-                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
-            ),
-            query => query.Include(a => a.Group).Include(a => a.ActivitySplits).Include(a => a.Paidby)
-        );
-
-        var allExpenses = directExpenses.Concat(groupExpenses).OrderByDescending(a => a.CreatedAt).ToList();
-
-        var expenseList = allExpenses.Select(exp =>
+        decimal oweLent = 0;
+        if (exp.Paidbyid == userId)
         {
-            decimal oweLent = 0;
-            if (exp.Paidbyid == userId)
-            {
-                oweLent = exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount);
-            }
-            else if (exp.Paidbyid == id)
-            {
-                oweLent = -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount);
-            }
-
-            return new GetExpenseByGroupId
-            {
-                Id = exp.Id,
-                Description = exp.Group != null
-                    ? (string.IsNullOrEmpty(exp.Description) ? exp.Group.Groupname : $"{exp.Group.Groupname} - {exp.Description}")
-                    : exp.Description ?? "",
-                PayerName = exp.Paidbyid == userId ? "You" : exp.Paidby?.Username ?? "",
-                Amount = exp.Amount,
-                Date = exp.Time,
-                OweLentAmount = Math.Abs(oweLent),
-                OweLentAmountOverall = oweLent
-            };
-        }).ToList();
-
-        decimal totalOweLent = 0;
-
-        // 1️⃣ Group-wise minimal settlements
-        foreach (var groupId in commonGroupIds)
+            // Current user paid, they lent the amount owed by the friend
+            oweLent = exp.ActivitySplits.FirstOrDefault(s => s.Userid == id)?.Splitamount ?? 0;
+        }
+        else if (exp.Paidbyid == id)
         {
-            var netBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId.Value);
-
-            // Apply transactions
-            var completedTransactions = await _transactionService.GetListAsync(t => t.Groupid == groupId && !t.Isdeleted);
-            foreach (var txn in completedTransactions)
-            {
-                if (txn.Payerid.HasValue && netBalances.ContainsKey(txn.Payerid.Value))
-                    netBalances[txn.Payerid.Value] += txn.Amount;
-
-                if (txn.Receiverid.HasValue && netBalances.ContainsKey(txn.Receiverid.Value))
-                    netBalances[txn.Receiverid.Value] -= txn.Amount;
-            }
-
-            var settlements = _activityService.CalculateMinimalSettlements(netBalances);
-            foreach (var s in settlements)
-            {
-                if ((s.PayerId == userId && s.ReceiverId == id) ||
-                    (s.PayerId == id && s.ReceiverId == userId))
-                {
-                    if (s.PayerId == userId)
-                        totalOweLent -= s.Amount; // you owe
-                    else
-                        totalOweLent += s.Amount; // friend owes
-                }
-            }
+            // Friend paid, current user owes their share
+            oweLent = -(exp.ActivitySplits.FirstOrDefault(s => s.Userid == userId)?.Splitamount ?? 0);
         }
 
-        // 2️⃣ Direct transactions (1:1)
-        foreach (var exp in directExpenses)
+        return new GroupItemResponse
         {
-            decimal oweLent = 0;
-            if (exp.Paidbyid == userId)
-            {
-                oweLent = exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount);
-            }
-            else if (exp.Paidbyid == id)
-            {
-                oweLent = -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount);
-            }
-
-            totalOweLent += oweLent;
-        }
-
-        var oneToOneTxns = await _transactionService.GetListAsync(
-            x => x.Groupid == null && (
-                (x.Payerid == userId && x.Receiverid == id) ||
-                (x.Payerid == id && x.Receiverid == userId)
-            )
-        );
-
-        foreach (var txn in oneToOneTxns)
-        {
-            if (txn.Payerid == userId)
-            {
-                totalOweLent += txn.Amount; // you paid
-            }
-            else if (txn.Payerid == id)
-            {
-                totalOweLent -= txn.Amount; // friend paid you
-            }
-        }
-
-        return new GetFriendresponse
-        {
-            Id = friendUser.Id,
-            Name = friendUser.Username,
-            Expenses = expenseList,
-            OweLentAmountOverall = totalOweLent // +ve: friend owes you, -ve: you owe friend
+            Id = exp.Id,
+            Type = "Expense",
+            Description = exp.Group != null
+                ? (string.IsNullOrEmpty(exp.Description) ? exp.Group.Groupname : $"{exp.Group.Groupname} - {exp.Description}")
+                : exp.Description ?? "",
+            PayerName = exp.Paidbyid == userId ? "You" : exp.Paidby?.Username ?? friendUser.Username,
+            ReceiverName = null, // Not applicable for expenses
+            Amount = exp.Amount ?? 0,
+            Date = exp.Time ?? DateTime.UtcNow,
+            OweLentAmount = oweLent, // Impact of this specific expense
+            OweLentAmountOverall = 0 ,
+            OrderDate = exp.CreatedAt ?? DateTime.UtcNow
         };
+    }).ToList();
+
+    allItems.AddRange(expenseResponses);
+
+    // 7. Process settle-up transactions (direct and group) and map to GetExpenseByGroupId
+    var transactionResponses = directTransactions.Concat(groupTransactions).Select(txn =>
+    {
+        decimal oweLent = 0;
+        string payerName = txn.Payerid == userId ? "You" : txn.Payer?.Username ?? friendUser.Username;
+        string receiverName = txn.Receiverid == userId ? "you" : txn.Receiver?.Username ?? friendUser.Username;
+
+        if (txn.Payerid == userId)
+        {
+            // Current user paid, they lent the amount
+            oweLent = txn.Amount;
+        }
+        else if (txn.Receiverid == userId)
+        {
+            // Current user received, they owe the amount (negative impact)
+            oweLent = -txn.Amount;
+        }
+
+        return new GroupItemResponse
+        {
+            Id = txn.Id,
+            Type = "SettleUp",
+            Description = $"{payerName} settled {receiverName}",
+            PayerName = payerName,
+            ReceiverName = receiverName,
+            Amount = txn.Amount,
+            Date = txn.Time ?? DateTime.UtcNow,
+            OweLentAmount = oweLent, // Impact of this specific transaction
+            OweLentAmountOverall = 0,
+            OrderDate = txn.CreatedAt ?? DateTime.UtcNow
+        };
+    }).ToList();
+
+    allItems.AddRange(transactionResponses);
+
+    // 8. Sort the combined list by Date in descending order (most recent first, e.g., s4, e3, s1, e2, e1)
+    allItems = allItems.OrderByDescending(item => item.OrderDate).ToList();
+
+    // 9. Calculate the overall owe/lent balance
+    decimal totalOweLentOverall = allItems.Sum(item => item.OweLentAmount);
+
+    // 10. Update OweLentAmountOverall for all items
+    foreach (var item in allItems)
+    {
+        item.OweLentAmountOverall = totalOweLentOverall;
     }
 
+    // 11. Return response
+    return new GetFriendresponse
+    {
+        Id = friendUser.Id,
+        Name = friendUser.Username,
+        Expenses = allItems,
+        OweLentAmountOverall = totalOweLentOverall // +ve: friend owes you, -ve: you owe friend
+    };
+}
     public async Task<List<MemberResponse>> GetFriendsAsync()
     {
         Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
