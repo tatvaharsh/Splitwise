@@ -1,0 +1,11 @@
+::ng-deep {
+  .mdc-snackbar__label {
+    padding: 4px 0px 4px 16px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.03rem;
+  }
+
+  .mdc-snackbar__surface {
+    padding-right: 0px !important;
+  }
+}

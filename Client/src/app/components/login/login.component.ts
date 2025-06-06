@@ -7,6 +7,7 @@ import { IResponse } from '../../generic/response';
 import { ILoginResponse } from '../../models/auth.model';
 import { GlobalConstant } from '../../generic/global-const';
 import { LocalStorageService } from '../../services/storage.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-login',
@@ -24,7 +25,8 @@ export class LoginComponent {
     private formBuilder: FormBuilder,
     private router: Router,
     private authService: AuthService, 
-    private store: LocalStorageService 
+    private store: LocalStorageService ,
+    private toastr: ToastrService
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
@@ -45,6 +47,7 @@ export class LoginComponent {
         next: (res: IResponse<ILoginResponse>) => {
           this.store.set(GlobalConstant.ACCESS_TOKEN, res.content);
           // Navigate based on role, default to '/groups'
+          this.toastr.success('Data saved successfully!', 'Success');
           this.router.navigate(['/groups']);
           this.isLoading = false;
         },

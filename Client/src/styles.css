@@ -2,3 +2,24 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.bg-success {
+    background-color: #4caf50 !important;
+    color: white !important;
+  }
+  
+  .bg-error {
+    background-color: #f44336 !important; 
+    color: white !important;
+  }
+  
+  .bg-warning {
+    background-color: #ff9800 !important;
+    color: white !important;
+  }
+  
+  .bg-info {
+    background-color: #2196f3 !important;
+    color: white !important;
+  }
+  

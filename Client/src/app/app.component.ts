@@ -10,7 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterOutlet } from "@angular/router"
-import { ToastContainerComponent } from "./generic/toast-container/toast-container.component"
+import { ToastrModule } from "ngx-toastr"
 @Component({
   selector: "app-root",
   standalone: true,
@@ -18,7 +18,9 @@ import { ToastContainerComponent } from "./generic/toast-container/toast-contain
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatDividerModule, RouterOutlet, ToastContainerComponent],
+    MatDividerModule, 
+    RouterOutlet,
+    ],
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
