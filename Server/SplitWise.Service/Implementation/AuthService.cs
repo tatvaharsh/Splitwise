@@ -12,7 +12,7 @@ public class AuthService(IBaseRepository<User> baseRepository) : BaseService<Use
         var existingUser = await GetOneAsync(x=>x.Email == request.Email);
 
         if (existingUser != null)
-            return "Email already exists.";
+            throw new AlreadyExistsException();
 
         User user = new()
         {

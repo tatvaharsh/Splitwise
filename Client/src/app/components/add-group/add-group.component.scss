@@ -1,76 +1,138 @@
 .add-group-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .group-card {
-    width: 100%;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    background: white;
-  }
-  
-  
-  .title {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-  
-  .full-width {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-  
-  .image-preview {
-    text-align: center;
-    margin: 20px 0;
-  }
-  
-  .image-preview img {
-    width: 100%;
-    max-width: 300px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  }
-  
-  .action-buttons {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 10px;
-  }
-  
-  ::ng-deep .cdk-overlay-container .cdk-overlay-pane .mat-dialog-container {
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-  .logo-preview {
-    display: flex;
-    justify-content: center;
-    margin-top: 16px;
-  }
-  
-  .logo-preview img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 2px solid #3f51b5;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  }
-  .upload-button {
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    color: #3f51b5;
-    margin-top: 8px;
-  }
-  .upload-button mat-icon {
-    margin-right: 6px;
-  }
-  
-  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.group-card {
+  width: 100%;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background: white;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px;
+  text-align: center;
+  color: #1a237e;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.full-width ::ng-deep .mat-form-field-wrapper {
+  padding-bottom: 0;
+}
+
+.full-width ::ng-deep .mat-form-field-label {
+  color: #757575;
+}
+
+.full-width ::ng-deep .mat-form-field-underline {
+  background-color: #3f51b5 !important;
+}
+
+.full-width ::ng-deep .mat-form-field-ripple {
+  background-color: #3f51b5 !important;
+}
+
+.full-width ::ng-deep .mat-error {
+  font-size: 12px;
+  color: #f44336;
+}
+
+.upload-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: #3f51b5;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 1px solid #e8eaf6;
+  border-radius: 8px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #e8eaf6;
+  border-color: #3f51b5;
+}
+
+.upload-button mat-icon {
+  margin-right: 8px;
+}
+
+.logo-preview {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.logo-preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid #3f51b5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  color: #424242;
+  font-weight: 500;
+  text-transform: none;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #f5f5f5;
+}
+
+.save-button {
+  flex: 1;
+  background-color: #3f51b5;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.save-button:hover {
+  background-color: #2c3e9c;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.save-button:disabled {
+  background-color: #b0bec5;
+  color: #eceff1;
+  box-shadow: none;
+}
+
+::ng-deep .cdk-overlay-container .cdk-overlay-pane .mat-dialog-container {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}

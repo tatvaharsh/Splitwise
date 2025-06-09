@@ -9,15 +9,23 @@ import { GlobalConstant } from '../global-const';
 import { IResponse } from '../response';
 
 export function   apiInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
+  const router = inject(Router);
   const snackBar = inject(SnackbarService);
   const authService = inject(AuthService);
-  const router = inject(Router);
   const store = inject(LocalStorageService);
-
-  //loaderService.showLoader();
   const accessToken = store.get(GlobalConstant.ACCESS_TOKEN);
 
+
   const isFormDataRequest = req.body instanceof FormData;
+
+  const decoded = store.getDecodedToken();
+  const now = Math.floor(Date.now() / 1000); 
+  const isExpired = decoded && Number(decoded.exp) < now;
+
+  if (!authService.check() || isExpired) {
+    store.remove(GlobalConstant.ACCESS_TOKEN);
+    router.navigate(['/login']);
+  }
 
   // Modify request headers dynamically
   let modifiedHeaders: { [header: string]: string } = {

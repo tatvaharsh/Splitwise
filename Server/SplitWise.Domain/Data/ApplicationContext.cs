@@ -225,6 +225,7 @@ public partial class ApplicationContext : DbContext
 
         OnModelCreatingPartial(modelBuilder);
         OnModelCreatingPartialCustom(modelBuilder);
+
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 namespace SplitWise.Domain.Data;
 
 [Table("friend_collections")]
-[Index("Userid", "Friendid", Name = "friend_collections_userid_friendid_key", IsUnique = true)]
 public partial class FriendCollection
 {
     [Key]

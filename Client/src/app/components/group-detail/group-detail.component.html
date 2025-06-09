@@ -1,205 +1,190 @@
 <div class="group-detail-container" *ngIf="group">
-    <div class="group-header">
-      <div class="back-button">
-        <button mat-icon-button routerLink="/groups">
-          <mat-icon>arrow_back</mat-icon>
-        </button>
-      </div>
-      <div class="group-title">
+  <div class="group-header">
+    <div class="back-button">
+      <button mat-icon-button routerLink="/groups">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+    </div>
+    <div class="group-title">
         <div 
-          class="group-avatar" 
-          [style.backgroundImage]="'url(' + (group.autoLogo || '/assets/group-placeholder.jpg') + ')'">
-        </div>
-        <div class="group-info">
-          <h1>{{ group.groupname }}</h1>
-          <p>{{ group.totalMember }} {{ group.totalMember === 1 ? 'member' : 'members' }}</p>
-        </div>
+        *ngIf="group.autoLogo !== 'http://localhost:5158'"
+        class="group-avatar" 
+        [style.backgroundImage]="'url(' + (group.autoLogo || 'assets/group-placeholder.jpg') + ')'">
       </div>
-      <div class="group-actions">
-        <button mat-icon-button [matMenuTriggerFor]="groupMenu">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #groupMenu="matMenu">
-          <button mat-menu-item (click)="openAddMemberDialog(group)">
-            <mat-icon>person_add</mat-icon>
-            <span>Add member</span>
-          </button>
-        <button mat-menu-item (click)="editGroup(group)">
-            <mat-icon>edit</mat-icon>
-            <span>Edit group</span>
-          </button>
-          <button mat-menu-item (click)="confirmDelete(group.id)">
-            <mat-icon>delete</mat-icon>
-            <span>Delete group</span>
-          </button>
-        </mat-menu>
+      <div class="group-info">
+        <h1>{{ group.groupname }}</h1>
+        <p>{{ group.totalMember }} {{ group.totalMember === 1 ? 'member' : 'members' }}</p>
       </div>
     </div>
-  
-    <div class="group-balance-summary">
-      <div>
-        <div *ngIf="amount !== 0; else settled" 
-             class="balance-card" 
-             [ngClass]="{ 'positive': amount > 0, 'negative': amount < 0 }">
-          <span class="balance-label">
-            {{ amount > 0 ? 'You are owed' : 'You owe' }}
-          </span>
-          <span class="balance-amount">
-            ₹{{ getAbsoluteValue(amount) | number:'1.2-2' }}
-          </span>
+    <div class="group-actions">
+      <button mat-icon-button [matMenuTriggerFor]="groupMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #groupMenu="matMenu">
+        <button mat-menu-item (click)="openAddMemberDialog(group)">
+          <mat-icon>person_add</mat-icon>
+          <span>Add member</span>
+        </button>
+        <button mat-menu-item (click)="editGroup(group)">
+          <mat-icon>edit</mat-icon>
+          <span>Edit group</span>
+        </button>
+        <button mat-menu-item (click)="confirmDelete(group.id)">
+          <mat-icon>delete</mat-icon>
+          <span>Delete group</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <div class="group-balance-summary">
+    <div>
+      <div *ngIf="amount !== 0; else settled" 
+           class="balance-card" 
+           [ngClass]="{ 'positive': amount > 0, 'negative': amount < 0 }">
+        <span class="balance-label">
+          {{ amount > 0 ? 'You are owed' : 'You owe' }}
+        </span>
+        <span class="balance-amount">
+          ₹{{ getAbsoluteValue(amount) | number:'1.2-2' }}
+        </span>
+      </div>
+    
+      <ng-template #settled>
+        <div class="balance-card settled">
+          <span class="balance-label">Everything is settled up</span>
         </div>
-      
-        <ng-template #settled>
-          <div class="balance-card settled">
-            <span class="balance-label">Everything is settled up</span>
+      </ng-template>
+    </div>
+    
+    <button mat-raised-button class="settle-button" (click)="openSettleUpDialog(group.id)">
+      <mat-icon>payments</mat-icon>
+      Settle Up
+    </button>
+  </div>
+
+  <mat-tab-group [(selectedIndex)]="activeTab" animationDuration="0ms" class="group-tabs">
+    <mat-tab label="Expenses">
+      <div class="expenses-list">
+        <ng-container *ngIf="expenses?.length; else noExpenses">
+          <mat-card class="expense-card" *ngFor="let expense of expenses">
+            <div class="expense-card-content">
+              <div class="expense-header">
+                <div class="expense-date">
+                  {{ formatDate(expense.date) }}
+                </div>
+                <div class="expense-actions" *ngIf="expense.type === 'Expense'">
+                  <button mat-icon-button class="edit-button" (click)="editExpense(expense.id)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button class="delete-button" (click)="deleteexpense(expense.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+        
+              <!-- If the entry is a normal expense -->
+              <ng-container *ngIf="expense.type === 'Expense'; else settleUpBlock">
+                <div class="expense-details">
+                  <div class="expense-description">{{ expense.description }}</div>
+                  <div class="expense-payer">
+                    {{ expense.payerName }} paid ₹{{ expense.amount }}
+                  </div>
+                </div>
+        
+                <div
+                  class="expense-lending"
+                  [ngClass]="{
+                    'text-green': expense.payerName === 'You' && expense.oweLentAmount !== 0,
+                    'text-red': expense.payerName !== 'You' && expense.oweLentAmount !== 0,
+                    'text-gray': expense.oweLentAmount === 0
+                  }"
+                >
+                  {{ expense.oweLentAmount === 0 
+                      ? 'You are not involved' 
+                      : (expense.payerName === 'You' ? 'You lent' : 'You borrowed') + ' ₹' + getAbsoluteValue(expense.oweLentAmount)}}
+                </div>
+              </ng-container>
+        
+              <!-- If the entry is a SettleUp -->
+              <ng-template #settleUpBlock>
+                <div class="expense-details">
+                  <div class="expense-description text-blue">
+                    {{ expense.description }}
+                  </div>
+                  <div class="expense-payer">
+                    Settlement of ₹{{ expense.amount }} between {{ expense.payerName }} and {{ expense.receiverName }}
+                  </div>
+                </div>
+                <div class="expense-lending text-blue">
+                  Settled up
+                </div>
+              </ng-template>
+            </div>
+          </mat-card>
+        </ng-container>
+        
+        <ng-template #noExpenses>
+          <div class="empty-state">
+            <mat-icon class="empty-icon">receipt_long</mat-icon>
+            <h2>No expenses yet</h2>
+            <p>Add an expense to start tracking</p>
+            <button mat-raised-button class="action-button" (click)="openAddExpenseDialog(group)">
+              <mat-icon>add</mat-icon>
+              Add Expense
+            </button>
           </div>
         </ng-template>
       </div>
-      
-      
-      <button mat-raised-button color="primary" (click)="openSettleUpDialog(group.id)">
-        <mat-icon>payments</mat-icon>
-        Settle Up
-      </button>
-    </div>
-  
-    <mat-tab-group [(selectedIndex)]="activeTab" animationDuration="0ms" class="group-tabs">
-      <mat-tab label="Expenses">
-        <div class="expenses-list">
-          <ng-container *ngIf="expenses?.length; else noExpenses">
-            <mat-card class="expense-card" *ngFor="let expense of expenses">
-              <div class="expense-card-content">
+    </mat-tab>
+    
+    <mat-tab label="Members">
+      <div class="members-list-container">
+        <div class="members-list" *ngIf="group.members?.length;">
+          <div class="member-item" *ngFor="let member of group.members">
+            <div class="member-info">
+              <mat-icon class="member-avatar">person</mat-icon>
+              <span class="member-name">{{ member.name }}</span>
+            </div>
           
-                <div class="expense-header">
-                  <div class="expense-date">
-                    {{ formatDate(expense.date) }}
-                  </div>
-                  <div class="expense-actions" *ngIf="expense.type === 'Expense'">
-                    <button mat-icon-button color="primary" (click)="editExpense(expense.id)">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteexpense(expense.id)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-          
-                <!-- If the entry is a normal expense -->
-                <ng-container *ngIf="expense.type === 'Expense'; else settleUpBlock">
-                  <div class="expense-details">
-                    <div class="expense-description">{{ expense.description }}</div>
-                    <div class="expense-payer">
-                      {{ expense.payerName }} paid ₹{{ expense.amount }}
-                    </div>
-                  </div>
-          
-                  <div
-                    class="expense-lending"
-                    [ngClass]="{
-                      'text-green': expense.payerName === 'You' && expense.oweLentAmount !== 0,
-                      'text-red': expense.payerName !== 'You' && expense.oweLentAmount !== 0,
-                      'text-gray': expense.oweLentAmount === 0
-                    }"
-                  >
-                    {{ expense.oweLentAmount === 0 
-                        ? 'You are not involved' 
-                        : (expense.payerName === 'You' ? 'You lent' : 'You borrowed') + ' ₹' + getAbsoluteValue(expense.oweLentAmount)}}
-                  </div>
-                </ng-container>
-          
-                <!-- If the entry is a SettleUp -->
-                <ng-template #settleUpBlock>
-                  <div class="expense-details">
-                    <div class="expense-description text-blue">
-                      {{ expense.description }}
-                    </div>
-                    <div class="expense-payer">
-                      Settlement of ₹{{ expense.amount }} between {{ expense.payerName }} and {{ expense.receiverName }}
-                    </div>
-                  </div>
-                  <div class="expense-lending text-blue">
-                    Settled up
-                  </div>
-                </ng-template>
-          
-              </div>
-            </mat-card>
-          </ng-container>
-          
-        
-          <ng-template #noExpenses>
-            <div class="empty-state">
-              <mat-icon class="empty-icon">receipt_long</mat-icon>
-              <h2>No expenses yet</h2>
-              <p>Add an expense to start tracking</p>
-              <button mat-raised-button color="primary" (click)="openAddExpenseDialog(group)">
-                <mat-icon>add</mat-icon>
-                Add Expense
+            <!-- Wrapper to reserve space for the button -->
+            <div class="delete-button-wrapper">
+              <button *ngIf="member.id !== currentUserId"
+                      mat-icon-button
+                      class="delete-button"
+                      (click)="removeMember(member.id, group.id)">
+                <mat-icon>delete</mat-icon>
               </button>
+          
+              <!-- Empty button space for layout consistency -->
+              <span *ngIf="member.id === currentUserId" class="placeholder-button"></span>
             </div>
-          </ng-template>
-        </div>
-        
-      </mat-tab>
-      
-      <mat-tab label="Members">
-        <div class="members-list-container">
-          <div class="members-list" *ngIf="group.members?.length;">
-            <div class="member-item" *ngFor="let member of group.members">
-              <div class="member-info">
-                <mat-icon class="member-avatar">person</mat-icon>
-                <span class="member-name">{{ member.name }}</span>
-              </div>
-            
-              <!-- Wrapper to reserve space for the button -->
-              <div class="delete-button-wrapper">
-                <button *ngIf="member.id !== currentUserId"
-                        mat-icon-button
-                        color="warn"
-                        (click)="removeMember(member.id, group.id)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-            
-                <!-- Empty button space for layout consistency -->
-                <span *ngIf="member.id === currentUserId" class="placeholder-button"></span>
-              </div>
-            </div>
-            
-          </div>
-      
-          <div class="empty-state">
-            <mat-icon class="empty-icon">group</mat-icon>
-            <button mat-raised-button color="primary" (click)="openAddMemberDialog(group)">
-              <mat-icon>person_add</mat-icon>
-              Add Member
-            </button>
           </div>
         </div>
-      </mat-tab>      
+    
+        <div class="empty-state">
+          <mat-icon class="empty-icon">group</mat-icon>
+          <button mat-raised-button class="action-button" (click)="openAddMemberDialog(group)">
+            <mat-icon>person_add</mat-icon>
+            Add Member
+          </button>
+        </div>
+      </div>
+    </mat-tab>      
+  </mat-tab-group>
+</div>
       
-    </mat-tab-group>
-  
-    <button 
-      mat-fab 
-      color="accent" 
-      class="fab-button" 
-      (click)="openAddExpenseDialog(group)"
-      aria-label="Add expense">
-      <mat-icon>add</mat-icon>
-    </button>
-  </div>
-        
-      <!-- Delete confirmation dialog -->
-      <app-delete-confirmation-dialog
-        [isVisible]="(dialogState$ | async)?.isVisible || false"
-        [title]="(dialogState$ | async)?.title || ''"
-        [message]="(dialogState$ | async)?.message || ''"
-        (confirm)="deleteExpense()"
-        (cancel)="cancelDelete()"
-      ></app-delete-confirmation-dialog>
+<!-- Delete confirmation dialog -->
+<app-delete-confirmation-dialog
+  [isVisible]="(dialogState$ | async)?.isVisible || false"
+  [title]="(dialogState$ | async)?.title || ''"
+  [message]="(dialogState$ | async)?.message || ''"
+  (confirm)="deleteExpense()"
+  (cancel)="cancelDelete()"
+></app-delete-confirmation-dialog>
 
-      <app-settle-up-dialog 
-      [isOpen]="isDialogOpen"
-      [groupId]="groupId"
-      (closeDialog)="closeDialog()">
-      </app-settle-up-dialog>
+<app-settle-up-dialog 
+  [isOpen]="isDialogOpen"
+  [groupId]="groupId"
+  (closeDialog)="closeDialog()">
+</app-settle-up-dialog>

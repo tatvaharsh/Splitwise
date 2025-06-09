@@ -1,4 +1,4 @@
-<div class="friend-detail-container" *ngIf="friend ">
+<div class="friend-detail-container" *ngIf="friend">
   <div class="friend-header">
     <div class="back-button">
       <button mat-icon-button routerLink="/friends">
@@ -31,7 +31,7 @@
 
     <button 
       mat-raised-button 
-      color="primary" 
+      class="settle-button" 
       (click)="openSettleUpDialog(friend.id)" 
       [disabled]="friend.oweLentAmountOverall === 0">
       <mat-icon>payments</mat-icon>
@@ -46,16 +46,15 @@
       <ng-container *ngIf="friend.expenses?.length; else noExpenses">
         <mat-card class="expense-card" *ngFor="let expense of friend.expenses">
           <div class="expense-card-content">
-      
             <div class="expense-header">
               <div class="expense-date">
                 {{ formatDate(expense.date) }}
               </div>
               <div class="expense-actions" *ngIf="expense.type === 'Expense'">
-                <button mat-icon-button color="primary" (click)="editExpense(expense.id)">
+                <button mat-icon-button class="edit-button" (click)="editExpense(expense.id)">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteexpense(expense.id)">
+                <button mat-icon-button class="delete-button" (click)="deleteexpense(expense.id)">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -98,7 +97,6 @@
                 Settled up
               </div>
             </ng-template>
-      
           </div>
         </mat-card>
       </ng-container>
@@ -107,7 +105,7 @@
           <mat-icon class="empty-icon">receipt_long</mat-icon>
           <h2>No expenses yet</h2>
           <p>Add an expense to start tracking</p>
-          <button mat-raised-button color="primary" (click)="openAddExpenseDialog(friend)">
+          <button mat-raised-button class="action-button" (click)="openAddExpenseDialog(friend)">
             <mat-icon>add</mat-icon>
             Add Expense
           </button>
@@ -115,27 +113,19 @@
       </ng-template>
     </div>    
   </div>
-
-  <button 
-    mat-fab 
-    color="accent" 
-    class="fab-button" 
-    (click)="openAddExpenseDialog(friend)"
-    aria-label="Add expense">
-    <mat-icon>add</mat-icon>
-  </button>
 </div>
-      <!-- Delete confirmation dialog -->
-      <app-delete-confirmation-dialog
-        [isVisible]="(dialogState$ | async)?.isVisible || false"
-        [title]="(dialogState$ | async)?.title || ''"
-        [message]="(dialogState$ | async)?.message || ''"
-        (confirm)="deleteExpense()"
-        (cancel)="cancelDelete()"
-      ></app-delete-confirmation-dialog>
 
-      <app-settle-up-dialog 
-      [isOpen]="isDialogOpen"
-      [friendId]="friendId"
-      (closeDialog)="closeDialog()">
-      </app-settle-up-dialog>
+<!-- Delete confirmation dialog -->
+<app-delete-confirmation-dialog
+  [isVisible]="(dialogState$ | async)?.isVisible || false"
+  [title]="(dialogState$ | async)?.title || ''"
+  [message]="(dialogState$ | async)?.message || ''"
+  (confirm)="deleteExpense()"
+  (cancel)="cancelDelete()"
+></app-delete-confirmation-dialog>
+
+<app-settle-up-dialog 
+  [isOpen]="isDialogOpen"
+  [friendId]="friendId"
+  (closeDialog)="closeDialog()">
+</app-settle-up-dialog>

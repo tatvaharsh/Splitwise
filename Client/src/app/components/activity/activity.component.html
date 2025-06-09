@@ -7,6 +7,9 @@
     <ng-container *ngIf="activities.length; else noActivities">
       <mat-card class="activity-card" *ngFor="let activity of activities">
         <div class="activity-card-content">
+          <div class="activity-icon">
+            <mat-icon>history</mat-icon>
+          </div>
           <div class="activity-details">
             <div class="activity-description">{{ activity.description }}</div>
             <div class="activity-date">{{ formatDate(activity.createdAt) }}</div>

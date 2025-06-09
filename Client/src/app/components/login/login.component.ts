@@ -49,12 +49,14 @@ export class LoginComponent {
           // Navigate based on role, default to '/groups'
           this.toastr.success('Data saved successfully!', 'Success');
           this.router.navigate(['/groups']);
+          alert("login successful, welcome to splitwise");
           this.isLoading = false;
         },
         error: (error) => {
           this.isLoading = false;
           // Optionally, handle the error (e.g., show a notification)
           console.error('Login failed', error);
+          alert("login failed, please try again");
         }
       });
     } else {

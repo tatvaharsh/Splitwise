@@ -48,9 +48,11 @@ export class SignupComponent {
         next: () => {
           this.router.navigate(['/login']);
           this.isLoading = false;
+          alert("Signup successful, please login to continue");
         },
         error: (error) => {
           this.isLoading = false;
+          alert("Signup failed, please try again");
           // Optionally, handle the error (e.g., show a notification)
         },
         complete: () => {

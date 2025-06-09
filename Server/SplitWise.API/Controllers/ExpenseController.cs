@@ -148,7 +148,7 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
                     Date = groupEntity.Time ?? DateTime.UtcNow, // Use expense time for sorting
                     OweLentAmount = owelentAmount, // This is the impact of this specific expense
                     OweLentAmountOverall = 0 ,
-                    OrderDate = groupEntity.Time ?? DateTime.UtcNow // Use expense time for sorting 
+                    OrderDate = groupEntity.CreatedAt ?? DateTime.UtcNow // Use expense time for sorting 
                 };
             }).ToList();
 
@@ -189,14 +189,14 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
                     Date = txn.Time ?? DateTime.UtcNow, // Use transaction time for sorting
                     OweLentAmount = owelentAmount, // This is the impact of this specific transaction
                     OweLentAmountOverall = 0 ,
-                    OrderDate = txn.Time ?? DateTime.UtcNow // Use transaction time for sorting 
+                    OrderDate = txn.CreatedAt ?? DateTime.UtcNow // Use transaction time for sorting 
                 };
             }).ToList();
 
         allGroupItems.AddRange(transactionResponses);
 
         // 5. Sort the combined list by Date (most recent first)
-        allGroupItems = allGroupItems.OrderByDescending(item => item.Date).ToList();
+        allGroupItems = allGroupItems.OrderByDescending(item => item.OrderDate).ToList();
 
         // 6. Calculate the final overall owe/lent balance for the current user
         // This sum correctly accounts for all expenses and settle-up transactions.

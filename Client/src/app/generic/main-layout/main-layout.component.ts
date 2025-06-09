@@ -64,4 +64,9 @@ export class MainLayoutComponent {
   openProfileMenu(): void {
     this.router.navigate(["/profile"])
   }
+
+  logout(): void {
+    localStorage.clear();
+    this.router.navigate(['/login']);
+  }
 }

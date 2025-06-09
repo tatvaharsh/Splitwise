@@ -1,22 +1,91 @@
 .add-member-container {
-    padding: 16px;
-  }
-  
-  .form-row {
-    margin-bottom: 16px;
-  }
-  
-  .full-width {
-    width: 100%;
-  }
-  
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding: 8px 0 16px;
-  }
-  .action-buttons{
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-  }
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  max-width: 448px;
+  width: 100%;
+}
+
+.add-member-container h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px;
+  text-align: center;
+  color: #1a237e;
+}
+
+.form-row {
+  margin-bottom: 24px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.full-width ::ng-deep .mat-form-field-wrapper {
+  padding-bottom: 0;
+}
+
+.full-width ::ng-deep .mat-form-field-label {
+  color: #757575;
+}
+
+.full-width ::ng-deep .mat-form-field-underline {
+  background-color: #3f51b5 !important;
+}
+
+.full-width ::ng-deep .mat-form-field-ripple {
+  background-color: #3f51b5 !important;
+}
+
+.full-width ::ng-deep .mat-select-arrow {
+  color: #3f51b5;
+}
+
+.full-width ::ng-deep .mat-error {
+  font-size: 12px;
+  color: #f44336;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 0;
+}
+
+.cancel-button {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  color: #424242;
+  font-weight: 500;
+  text-transform: none;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #f5f5f5;
+}
+
+.save-button {
+  flex: 1;
+  background-color: #3f51b5;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.save-button:hover {
+  background-color: #2c3e9c;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.save-button:disabled {
+  background-color: #b0bec5;
+  color: #eceff1;
+  box-shadow: none;
+}

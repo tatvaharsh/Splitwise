@@ -31,7 +31,10 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
         // Find the friend request
         var friendRequest = GetOneAsync(
-            x => (x.Userid == userId && x.Friendid == friendId) || (x.Userid == friendId && x.Friendid == userId),
+            x =>
+                ((x.Userid == userId && x.Friendid == friendId) ||
+                (x.Userid == friendId && x.Friendid == userId)) &&
+                x.Status == "pending",
             query => query.Include(x => x.User).Include(x => x.Friend)
         ).Result;
 
@@ -56,11 +59,14 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         var loggedInUser = await _userService.GetOneAsync(x => x.Id == userId);
         if (existingUser != null)
         {
-            // Already a user, add to friend collection
             bool alreadyFriend = await GetOneAsync(
-                x => (x.Userid == userId && x.Friendid == existingUser.Id) || (x.Userid == existingUser.Id && x.Friendid == userId),
+                x =>
+                    ((x.Userid == userId && x.Friendid == existingUser.Id) ||
+                    (x.Userid == existingUser.Id && x.Friendid == userId)) &&
+                    x.Status == "Accepted",
                 query => query.Include(x => x.User).Include(x => x.Friend)
             ) != null;
+
             if (alreadyFriend)
             {
                 return "You are already connected or have a pending request.";
@@ -90,7 +96,6 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         return SplitWiseConstants.RECORD_CREATED;
     }
 
-
     public async Task<string> AddFriendIntoGroup(Guid friendId, Guid groupId)
     {
         string groupName = string.Empty;
@@ -102,23 +107,55 @@ public class FriendService(IBaseRepository<FriendCollection> baseRepository, IAc
         }
 
         Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-        var result = await GetOneAsync(
-            x => x.Friendid == friendId || x.Userid == friendId,
-            query => query
-                .Include(x => x.User)
-                .Include(x => x.Friend)
-                .Include(x => x.User.GroupMembers)
-                    .ThenInclude(gm => gm.Group)
+
+        // Get the friend being added to log their username
+        var addedFriend = await GetOneAsync(x => x.Friendid == friendId || x.Userid == friendId, 
+            query => query.Include(x=>x.Friend).Include(x=>x.User)); 
+
+        var existingGroupMembers = await _groupMemberService.GetListAsync(
+            x => x.Groupid == groupId && x.Memberid != friendId,
+            query => query.Include(gm => gm.Member) // Assuming Member is a navigation to User
         );
-        GroupMember groupMember = new()
+
+        // Add the new friend to the group
+        GroupMember newGroupMember = new()
         {
             Groupid = groupId,
             Memberid = friendId,
             JoinedAt = DateTime.UtcNow
         };
-        await _groupMemberService.AddAsync(groupMember);
+        await _groupMemberService.AddAsync(newGroupMember);
 
-        await _activityLoggerService.LogAsync(userId, $"You added '{result.Friend.Username}' to the group '{groupName}'");
+        // 2. Iterate through existing group members and establish friendships if they don't exist
+        foreach (var existingMember in existingGroupMembers)
+        {
+            // Skip if the existing member is the same as the friend being added
+            if (existingMember.Memberid == friendId)
+            {
+                continue;
+            }
+
+            // Check if a friendship already exists between friendId and existingMember.Memberid
+            // Assuming your friendship entity has Userid and Friendid properties
+            var friendshipExists = await GetOneAsync(
+                f => (f.Userid == friendId && f.Friendid == existingMember.Memberid) ||
+                    (f.Userid == existingMember.Memberid && f.Friendid == friendId)
+            );
+
+            if (friendshipExists == null)
+            {
+                // Create a new friendship for both directions (friendId -> existingMember)
+                FriendCollection newFriendship1 = new()
+                {
+                    Userid = friendId,
+                    Friendid = existingMember.Memberid,
+                    Status = "accepted" 
+                };
+                await AddAsync(newFriendship1);
+            }
+        }
+
+        await _activityLoggerService.LogAsync(userId, $"You added '{addedFriend.Friend.Username}' to the group '{groupName}'");
         return Domain.SplitWiseConstants.RECORD_CREATED;
     }
 
@@ -722,152 +759,183 @@ public List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decim
     }
 
     public async Task<GetFriendresponse> GetFriendDetails(Guid id)
-{
-    Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
-
-    // Get friendship relation
-    var friendRelation = await GetOneAsync(
-        x => (x.Userid == userId && x.Friendid == id) || (x.Userid == id && x.Friendid == userId),
-        query => query.Include(x => x.User).Include(x => x.Friend)
-    ) ?? throw new Exception("Friend not found");
-
-    var friendUser = friendRelation.Userid == userId ? friendRelation.Friend : friendRelation.User;
-
-    // 1. Fetch 1:1 expenses
-    var directExpenses = await _activityService.GetListAsync(
-        x => !x.Isdeleted && x.Groupid == null &&
-             ((x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
-              (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))),
-        query => query.Include(a => a.ActivitySplits).ThenInclude(s => s.User).Include(a => a.Paidby)
-    ) ?? new List<Activity>();
-
-    // 2. Fetch group memberships and common groups
-    var groupMembers = await _groupMemberService.GetListAsync(
-        x => (x.Memberid == userId || x.Memberid == id) && x.Groupid != null,
-        query => query.Include(x => x.Group)
-    );
-
-    var commonGroupIds = groupMembers
-        .GroupBy(x => x.Groupid)
-        .Where(g => g.Count() > 1)
-        .Select(g => g.Key)
-        .ToList();
-
-    // 3. Fetch group expenses
-    var groupExpenses = await _activityService.GetListAsync(
-        x => !x.Isdeleted && x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) &&
-             ((x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
-              (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))),
-        query => query.Include(a => a.Group).Include(a => a.ActivitySplits).ThenInclude(s => s.User).Include(a => a.Paidby)
-    ) ?? new List<Activity>();
-
-    // 4. Fetch direct (1:1) settle-up transactions
-    var directTransactions = await _transactionService.GetListAsync(
-        x => x.Groupid == null && !x.Isdeleted &&
-             ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
-        query => query.Include(x => x.Payer).Include(x => x.Receiver)
-    ) ?? new List<Transaction>();
-
-    // 5. Fetch group settle-up transactions
-    var groupTransactions = await _transactionService.GetListAsync(
-        x => x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) && !x.Isdeleted &&
-             ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
-        query => query.Include(x => x.Payer).Include(x => x.Receiver)
-    ) ?? new List<Transaction>();
-
-    // List to hold all combined expense and transaction items
-    List<GroupItemResponse> allItems = new List<GroupItemResponse>();
-
-    // 6. Process expense entries (direct and group) and map to GetExpenseByGroupId
-    var expenseResponses = directExpenses.Concat(groupExpenses).Select(exp =>
     {
-        decimal oweLent = 0;
-        if (exp.Paidbyid == userId)
+        Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+    
+        // Get friendship relation
+        var friendRelation = await GetOneAsync(
+            x => (x.Userid == userId && x.Friendid == id) || (x.Userid == id && x.Friendid == userId),
+            query => query.Include(x => x.User).Include(x => x.Friend)
+        ) ?? throw new Exception("Friend not found");
+    
+        var friendUser = friendRelation.Userid == userId ? friendRelation.Friend : friendRelation.User;
+    
+        // 1️⃣ 1:1 expenses
+        var directExpenses = await _activityService.GetListAsync(
+            x => !x.Isdeleted && x.Groupid == null &&
+            (
+                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
+            ),
+            query => query.Include(a => a.ActivitySplits).Include(a => a.Paidby)
+        );
+    
+        // 2️⃣ Group memberships
+        var groupMembers = await _groupMemberService.GetListAsync(
+            x => (x.Memberid == userId || x.Memberid == id) && x.Groupid != null,
+            query => query.Include(x => x.Group)
+        );
+    
+        var commonGroupIds = groupMembers
+            .GroupBy(x => x.Groupid)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+    
+        // 3️⃣ Group expenses
+        var groupExpenses = await _activityService.GetListAsync(
+            x => !x.Isdeleted && x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) &&
+            (
+                (x.Paidbyid == userId && x.ActivitySplits.Any(s => s.Userid == id)) ||
+                (x.Paidbyid == id && x.ActivitySplits.Any(s => s.Userid == userId))
+            ),
+            query => query.Include(a => a.Group).Include(a => a.ActivitySplits).Include(a => a.Paidby)
+        );
+    
+        // 🧾 Expense Items
+        var expenseList = directExpenses.Concat(groupExpenses).Select(exp =>
         {
-            // Current user paid, they lent the amount owed by the friend
-            oweLent = exp.ActivitySplits.FirstOrDefault(s => s.Userid == id)?.Splitamount ?? 0;
+            decimal oweLent = 0;
+            if (exp.Paidbyid == userId)
+            {
+                oweLent = exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount);
+            }
+            else if (exp.Paidbyid == id)
+            {
+                oweLent = -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount);
+            }
+    
+            return new GroupItemResponse
+            {
+                Id = exp.Id,
+                Type = "Expense",
+                Description = exp.Group != null
+                    ? (string.IsNullOrEmpty(exp.Description) ? exp.Group.Groupname : $"{exp.Group.Groupname} - {exp.Description}")
+                    : exp.Description ?? "",
+                PayerName = exp.Paidbyid == userId ? "You" : exp.Paidby?.Username ?? "",
+                Amount = exp.Amount ?? 0,
+                Date = exp.Time ?? DateTime.UtcNow,
+                OweLentAmount = Math.Abs(oweLent),
+                OweLentAmountOverall = 0,
+                OrderDate = exp.CreatedAt ?? DateTime.UtcNow
+            };
+        }).ToList();
+    
+        // 🧾 Settle-up transactions (direct + group)
+        var directTxns = await _transactionService.GetListAsync(
+            x => x.Groupid == null && !x.Isdeleted &&
+            ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
+            query => query.Include(x => x.Payer).Include(x => x.Receiver)
+        );
+    
+        var groupTxns = await _transactionService.GetListAsync(
+            x => x.Groupid != null && commonGroupIds.Contains(x.Groupid.Value) && !x.Isdeleted &&
+            ((x.Payerid == userId && x.Receiverid == id) || (x.Payerid == id && x.Receiverid == userId)),
+            query => query.Include(x => x.Payer).Include(x => x.Receiver).Include(x => x.Group)
+        );
+    
+        var txnList = directTxns.Concat(groupTxns).Select(txn =>
+        {
+            decimal oweLent = txn.Payerid == userId ? txn.Amount : -txn.Amount;
+    
+            return new GroupItemResponse
+            {
+                Id = txn.Id,
+                Type = "SettleUp",
+                Description = txn.Group != null
+                    ? $"{(txn.Payerid == userId ? "You" : txn.Payer?.Username)} settled {(txn.Receiverid == userId ? "you" : txn.Receiver?.Username)} in {txn.Group.Groupname}"
+                    : $"{(txn.Payerid == userId ? "You" : txn.Payer?.Username)} settled {(txn.Receiverid == userId ? "you" : txn.Receiver?.Username)}",
+                PayerName = txn.Payerid == userId ? "You" : txn.Payer?.Username ?? "",
+                ReceiverName = txn.Receiverid == userId ? "you" : txn.Receiver?.Username ?? "",
+                Amount = txn.Amount,
+                Date = txn.Time ?? DateTime.UtcNow,
+                OweLentAmount = Math.Abs(oweLent),
+                OweLentAmountOverall = 0,
+                OrderDate = txn.CreatedAt ?? DateTime.UtcNow
+            };
+        }).ToList();
+    
+        // Combine and sort
+        var allItems = expenseList.Concat(txnList).OrderByDescending(x => x.OrderDate).ToList();
+    
+        // ✅ Accurate totalOweLent (from original logic)
+        decimal totalOweLent = 0;
+    
+        // Group-based settlement netting
+        foreach (var groupId in commonGroupIds)
+        {
+            var netBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId.Value);
+            var groupSettleTxns = await _transactionService.GetListAsync(t => t.Groupid == groupId && !t.Isdeleted);
+    
+            foreach (var txn in groupSettleTxns)
+            {
+                if (txn.Payerid.HasValue && netBalances.ContainsKey(txn.Payerid.Value))
+                    netBalances[txn.Payerid.Value] += txn.Amount;
+                if (txn.Receiverid.HasValue && netBalances.ContainsKey(txn.Receiverid.Value))
+                    netBalances[txn.Receiverid.Value] -= txn.Amount;
+            }
+    
+            var settlements = _activityService.CalculateMinimalSettlements(netBalances);
+            foreach (var s in settlements)
+            {
+                if ((s.PayerId == userId && s.ReceiverId == id) || (s.PayerId == id && s.ReceiverId == userId))
+                {
+                    if (s.PayerId == userId)
+                        totalOweLent -= s.Amount;
+                    else
+                        totalOweLent += s.Amount;
+                }
+            }
         }
-        else if (exp.Paidbyid == id)
+    
+        // 1:1 direct expense impact
+        foreach (var exp in directExpenses)
         {
-            // Friend paid, current user owes their share
-            oweLent = -(exp.ActivitySplits.FirstOrDefault(s => s.Userid == userId)?.Splitamount ?? 0);
+            decimal oweLent = 0;
+            if (exp.Paidbyid == userId)
+            {
+                oweLent = exp.ActivitySplits.Where(s => s.Userid == id).Sum(s => s.Splitamount);
+            }
+            else if (exp.Paidbyid == id)
+            {
+                oweLent = -exp.ActivitySplits.Where(s => s.Userid == userId).Sum(s => s.Splitamount);
+            }
+            totalOweLent += oweLent;
         }
-
-        return new GroupItemResponse
+    
+        // 1:1 transactions
+        foreach (var txn in directTxns)
         {
-            Id = exp.Id,
-            Type = "Expense",
-            Description = exp.Group != null
-                ? (string.IsNullOrEmpty(exp.Description) ? exp.Group.Groupname : $"{exp.Group.Groupname} - {exp.Description}")
-                : exp.Description ?? "",
-            PayerName = exp.Paidbyid == userId ? "You" : exp.Paidby?.Username ?? friendUser.Username,
-            ReceiverName = null, // Not applicable for expenses
-            Amount = exp.Amount ?? 0,
-            Date = exp.Time ?? DateTime.UtcNow,
-            OweLentAmount = oweLent, // Impact of this specific expense
-            OweLentAmountOverall = 0 ,
-            OrderDate = exp.CreatedAt ?? DateTime.UtcNow
+            if (txn.Payerid == userId)
+                totalOweLent += txn.Amount;
+            else if (txn.Payerid == id)
+                totalOweLent -= txn.Amount;
+        }
+    
+        // Update final balance to each item
+        foreach (var item in allItems)
+        {
+            item.OweLentAmountOverall = totalOweLent;
+        }
+    
+        return new GetFriendresponse
+        {
+            Id = friendUser.Id,
+            Name = friendUser.Username,
+            Expenses = allItems,
+            OweLentAmountOverall = totalOweLent
         };
-    }).ToList();
-
-    allItems.AddRange(expenseResponses);
-
-    // 7. Process settle-up transactions (direct and group) and map to GetExpenseByGroupId
-    var transactionResponses = directTransactions.Concat(groupTransactions).Select(txn =>
-    {
-        decimal oweLent = 0;
-        string payerName = txn.Payerid == userId ? "You" : txn.Payer?.Username ?? friendUser.Username;
-        string receiverName = txn.Receiverid == userId ? "you" : txn.Receiver?.Username ?? friendUser.Username;
-
-        if (txn.Payerid == userId)
-        {
-            // Current user paid, they lent the amount
-            oweLent = txn.Amount;
-        }
-        else if (txn.Receiverid == userId)
-        {
-            // Current user received, they owe the amount (negative impact)
-            oweLent = -txn.Amount;
-        }
-
-        return new GroupItemResponse
-        {
-            Id = txn.Id,
-            Type = "SettleUp",
-            Description = $"{payerName} settled {receiverName}",
-            PayerName = payerName,
-            ReceiverName = receiverName,
-            Amount = txn.Amount,
-            Date = txn.Time ?? DateTime.UtcNow,
-            OweLentAmount = oweLent, // Impact of this specific transaction
-            OweLentAmountOverall = 0,
-            OrderDate = txn.CreatedAt ?? DateTime.UtcNow
-        };
-    }).ToList();
-
-    allItems.AddRange(transactionResponses);
-
-    // 8. Sort the combined list by Date in descending order (most recent first, e.g., s4, e3, s1, e2, e1)
-    allItems = allItems.OrderByDescending(item => item.OrderDate).ToList();
-
-    // 9. Calculate the overall owe/lent balance
-    decimal totalOweLentOverall = allItems.Sum(item => item.OweLentAmount);
-
-    // 10. Update OweLentAmountOverall for all items
-    foreach (var item in allItems)
-    {
-        item.OweLentAmountOverall = totalOweLentOverall;
     }
-
-    // 11. Return response
-    return new GetFriendresponse
-    {
-        Id = friendUser.Id,
-        Name = friendUser.Username,
-        Expenses = allItems,
-        OweLentAmountOverall = totalOweLentOverall // +ve: friend owes you, -ve: you owe friend
-    };
-}
     public async Task<List<MemberResponse>> GetFriendsAsync()
     {
         Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
@@ -927,9 +995,13 @@ public List<SettleSummaryDto> CalculateMinimalSettlements(Dictionary<Guid, decim
 
         // Find the friend request
         var friendRequest = GetOneAsync(
-            x => (x.Userid == userId && x.Friendid == friendId) || (x.Userid == friendId && x.Friendid == userId),
+            x =>
+                ((x.Userid == userId && x.Friendid == friendId) ||
+                (x.Userid == friendId && x.Friendid == userId)) &&
+                x.Status == "pending",
             query => query.Include(x => x.User).Include(x => x.Friend)
         ).Result;
+
 
         if (friendRequest == null || friendRequest.Status != "pending")
         {

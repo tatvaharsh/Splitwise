@@ -11,12 +11,12 @@
     <ng-container *ngIf="groups$?.length; else noGroups">
       <mat-card class="group-card" *ngFor="let group of groups$" (click)="openGroup(group.id)">
         <div class="group-card-content">
-          <div class="group-avatar">
-            <img [src]="group.autoLogo" alt="Group Avatar" />
+          <div class="group-avatar" *ngIf="group.autoLogo!= 'http://localhost:5158'">
+            <img [src]="group.autoLogo ||'../../../assets/splitwise_logo.png'" alt="Group Avatar" />
           </div>
           <div class="group-info">
             <h2 class="group-name">{{ group.groupname }}</h2>
-            <p class="group-members">{{ group.totalMember }} Member</p>
+            <p class="group-members">{{ group.totalMember }} {{ group.totalMember === 1 ? 'Member' : 'Members' }}</p>
           </div>
         </div>
       </mat-card>
@@ -29,7 +29,7 @@
         <p>Create a group to start tracking shared expenses</p>
         <button mat-raised-button class="add-group-btn" (click)="openAddGroupDialog()">
           <mat-icon>add</mat-icon>
-          <span>Add Group</span>
+          Add Group
         </button>
       </div>
     </ng-template>

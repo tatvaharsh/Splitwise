@@ -1,8 +1,8 @@
 <div class="friends-container">
   <div class="header">
     <h1>Friends</h1>
-    <button mat-raised-button color="primary" (click)="openAddFriendDialog()">
-      <mat-icon>person_add</mat-icon>
+    <button mat-raised-button class="add-button" (click)="openAddFriendDialog()">
+      <mat-icon>add</mat-icon>
       Add Friend
     </button>
   </div>
@@ -15,7 +15,7 @@
           <div class="friend-info">
             <h2 class="friend-name">{{ friend.name }}</h2>
             <p class="friend-last-activity" *ngIf="friend.lastActivityDescription">
-              Last: {{ friend.lastActivityDescription }}
+             Last: {{ friend.lastActivityDescription }}
             </p>
           </div>
           <div class="friend-balance">
@@ -32,8 +32,8 @@
         <mat-icon class="empty-icon">person</mat-icon>
         <h2>No friends yet</h2>
         <p>Add friends to start tracking shared expenses</p>
-        <button mat-raised-button color="primary" (click)="openAddFriendDialog()">
-          <mat-icon>person_add</mat-icon>
+        <button mat-raised-button class="add-button" (click)="openAddFriendDialog()">
+          <mat-icon>add</mat-icon>
           Add Friend
         </button>
       </div>
@@ -58,8 +58,8 @@
   
         <!-- Show Approve/Reject only if the user is the receiver -->
         <div class="friend-actions" *ngIf="pending.toId === currentUserId">
-          <button mat-button color="primary" (click)="approveFriend(pending.fromId)">Approve</button>
-          <button mat-button color="warn" (click)="rejectFriend(pending.fromId)">Reject</button>
+          <button mat-button class="action-button approve" (click)="approveFriend(pending.fromId)">Approve</button>
+          <button mat-button class="action-button reject" (click)="rejectFriend(pending.fromId)">Reject</button>
         </div>
   
         <!-- If the current user is the sender, show "Pending..." -->
@@ -69,5 +69,4 @@
       </div>
     </mat-card>
   </div>
-  
 </div>

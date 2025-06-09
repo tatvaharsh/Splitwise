@@ -1,131 +1,183 @@
 .friends-container {
-    padding: 16px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    
-    h1 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-  }
-  
-  .friends-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .friend-card {
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-  
-  .friend-card-content {
-    display: flex;
-    padding: 12px;
-  }
-  
-  .friend-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-size: cover;
-    background-position: center;
-    margin-right: 16px;
-    flex-shrink: 0;
-  }
-  
-  .friend-info {
-    flex: 1;
-    min-width: 0;
-    
-    .friend-name {
-      margin: 0 0 4px;
-      font-size: 1.1rem;
-      font-weight: 500;
-    }
-    
-    .friend-last-activity {
-      margin: 0;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.6);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-  
-  .friend-balance {
-    display: flex;
-    align-items: center;
-    margin-left: 8px;
-    
-    .balance-amount {
-      font-weight: 500;
-      font-size: 0.9rem;
-      
-      &.positive {
-        color: #4caf50;
-      }
-      
-      &.negative {
-        color: #f44336;
-      }
-      
-      &.neutral {
-        color: rgba(0, 0, 0, 0.6);
-      }
-    }
-  }
-  
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 16px;
-    text-align: center;
-    
-    .empty-icon {
-      font-size: 48px;
-      height: 48px;
-      width: 48px;
-      margin-bottom: 16px;
-      color: rgba(0, 0, 0, 0.3);
-    }
-    
-    h2 {
-      margin: 0 0 8px;
-      font-size: 1.2rem;
-    }
-    
-    p {
-      margin: 0 0 24px;
-      color: rgba(0, 0, 0, 0.6);
-    }
-  }
-  .friend-card-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .friend-actions {
-    display: flex;
-    gap: 10px;
-  }
-  .pending-friends-section{
-    margin-top: 15px;
-  }
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: #f5f5f5;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.add-button {
+  background-color: #3f51b5;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-weight: 500;
+  font-size: 16px;
+  text-transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-button mat-icon {
+  margin-right: 8px;
+}
+
+
+.add-button:hover {
+  background-color: #5c6bc0;
+}
+
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.friend-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.friend-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.friend-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+}
+
+.friend-info {
+  flex: 1;
+}
+
+.friend-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #212121;
+}
+
+.friend-last-activity {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #757575;
+}
+
+.friend-balance {
+  margin-left: 16px;
+}
+
+.balance-amount {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.balance-amount.positive {
+  color: #4caf50;
+}
+
+.balance-amount.negative {
+  color: #f44336;
+}
+
+.balance-amount.neutral {
+  color: #757575;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  margin-bottom: 16px;
+  color: #bdbdbd;
+}
+
+.empty-state h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #212121;
+}
+
+.empty-state p {
+  margin: 0 0 24px;
+  color: #757575;
+  font-size: 14px;
+}
+
+.pending-friends-section {
+  margin-top: 24px;
+}
+
+.pending-friends-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a237e;
+  margin-bottom: 16px;
+}
+
+.pending-card {
+  border-left: 4px solid #ff9800;
+}
+
+.friend-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-button {
+  font-size: 14px;
+  text-transform: none;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.action-button.approve {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+}
+
+.action-button.reject {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.pending-status {
+  font-size: 14px;
+  color: #ff9800;
+  font-weight: 500;
+}

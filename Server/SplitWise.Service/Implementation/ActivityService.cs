@@ -325,7 +325,7 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
     }
 
 
-    public async Task<FriendBalancesSummary> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id)
+   public async Task<FriendBalancesSummary> CalculateNetBalancesForFriendsAsync(Guid friend1Id, Guid friend2Id)
     {
         var groupNetBalancesPerGroup = new Dictionary<Guid, Dictionary<Guid, decimal>>();
         var oneToOneNetBalances = new Dictionary<Guid, decimal>
@@ -333,19 +333,19 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
         { friend1Id, 0m },
         { friend2Id, 0m }
     };
-
+ 
         var relevantActivities = await GetListAsync(
             x => ((x.Paidbyid == friend1Id || x.Paidbyid == friend2Id) ||
                   x.ActivitySplits.Any(s => s.Userid == friend1Id || s.Userid == friend2Id)) && !x.Isdeleted,
             query => query.Include(x => x.ActivitySplits)
         );
-
+ 
         foreach (var activity in relevantActivities)
         {
             var payerId = activity.Paidbyid;
             var totalAmount = activity.Amount.GetValueOrDefault();
             bool isGroupExpense = activity.Groupid.HasValue && activity.Groupid != Guid.Empty;
-
+ 
             if (isGroupExpense && activity.Groupid.HasValue)
             {
                 Guid currentGroupId = activity.Groupid.Value;
@@ -357,7 +357,7 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
                     { friend2Id, 0m }
                 };
                 }
-
+ 
                 // Apply payer amount for group expenses
                 if (payerId == friend1Id && groupNetBalancesPerGroup[currentGroupId].ContainsKey(friend1Id))
                 {
@@ -367,13 +367,13 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
                 {
                     groupNetBalancesPerGroup[currentGroupId][friend2Id] += totalAmount;
                 }
-
+ 
                 // Apply split amounts for group expenses
                 foreach (var split in activity.ActivitySplits)
                 {
                     var userId = split.Userid;
                     var shareAmount = split.Splitamount;
-
+ 
                     if (userId.HasValue && (userId.Value == friend1Id || userId.Value == friend2Id) && groupNetBalancesPerGroup[currentGroupId].ContainsKey(userId.Value))
                     {
                         groupNetBalancesPerGroup[currentGroupId][userId.Value] -= shareAmount;
@@ -382,7 +382,10 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
             }
             else // One-to-one expense
             {
-                if (payerId == friend1Id && oneToOneNetBalances.ContainsKey(friend1Id))
+                if((payerId == friend1Id || payerId == friend2Id) &&
+                        activity.ActivitySplits.Select(s => s.Userid).Distinct().ToHashSet().IsSupersetOf(new Guid?[] { friend1Id, friend2Id }))
+                {
+                    if (payerId == friend1Id && oneToOneNetBalances.ContainsKey(friend1Id))
                 {
                     oneToOneNetBalances[friend1Id] += totalAmount;
                 }
@@ -390,27 +393,27 @@ IActivityLoggerService activityLoggerService, IAppContextService appContextServi
                 {
                     oneToOneNetBalances[friend2Id] += totalAmount;
                 }
-
+ 
                 foreach (var split in activity.ActivitySplits)
                 {
                     var userId = split.Userid;
                     var shareAmount = split.Splitamount;
-
+ 
                     if (userId.HasValue && (userId.Value == friend1Id || userId.Value == friend2Id) && oneToOneNetBalances.ContainsKey(userId.Value))
                     {
                         oneToOneNetBalances[userId.Value] -= shareAmount;
                     }
                 }
+                }
             }
         }
-
+ 
         return new FriendBalancesSummary
         {
             GroupBalancesPerGroup = groupNetBalancesPerGroup,
             OneToOneBalances = oneToOneNetBalances
         };
     }
-
     public List<SettleSummaryDto> CalculateMinimalSettlement(Dictionary<Guid, decimal> netBalances, Guid? groupId = null)
     {
         Guid userId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
