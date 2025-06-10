@@ -1,0 +1,253 @@
+<div class="settlement-transparency-container">
+    <div class="back-button">
+      <button mat-icon-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+    </div>
+  
+    <ng-container *ngIf="isLoading; else content">
+      <p>Loading settlement details...</p>
+    </ng-container>
+  
+    <ng-template #content>
+      <ng-container *ngIf="error; else loadedContent">
+        <p class="error-message">{{ error }}</p>
+      </ng-container>
+    </ng-template>
+  
+    <ng-template #loadedContent>
+      <ng-container *ngIf="settlementData">
+        <h2>How we calculated your settlement with {{ getFriendName() }}</h2>
+  
+        <div class="overall-summary">
+          <h3>To settle everything, here's the final picture:</h3>
+          <p>
+            <strong>{{ calculateOverallSettlementText() }}</strong>
+          </p>
+        </div>
+  
+        <hr />
+  
+        <section class="initial-balances-section">
+          <h3>1. Starting Point: Who Paid What?</h3>
+          <p class="explanation">
+            First, we look at all the shared expenses. This shows who paid for things
+            and how much each of you *should* have paid. This doesn't include any
+            money you might have paid directly to each other yet.
+          </p>
+  
+          <div class="balance-category">
+            <h4>For things you shared directly (not in a group):</h4>
+            <div class="balance-list">
+              <p>
+                <strong>{{ yourUserName }}:</strong>
+                <span [class.positive]="getUserBalance(settlementData.initialOneToOneActivityBalances, yourUserId) > 0"
+                      [class.negative]="getUserBalance(settlementData.initialOneToOneActivityBalances, yourUserId) < 0">
+                  {{ formatCurrency(getUserBalance(settlementData.initialOneToOneActivityBalances, yourUserId)) }}
+                </span>
+              </p>
+              <p>
+                <strong>{{ getFriendName() }}:</strong>
+                <span [class.positive]="getUserBalance(settlementData.initialOneToOneActivityBalances, friend2Id) > 0"
+                      [class.negative]="getUserBalance(settlementData.initialOneToOneActivityBalances, friend2Id) < 0">
+                  {{ formatCurrency(getUserBalance(settlementData.initialOneToOneActivityBalances, friend2Id)) }}
+                </span>
+              </p>
+            </div>
+            <p class="explanation balance-meaning">
+              <span class="highlight-positive">A green amount (like +₹100)</span> means this person **paid more than their share** for these things and **is owed money**.
+              <br>
+              <span class="highlight-negative">A red amount (like -₹100)</span> means this person **paid less than their share** for these things and **owes money**.
+            </p>
+          </div>
+  
+          <div class="balance-category">
+            <h4>For things you shared in groups:</h4>
+            <ng-container *ngIf="settlementData.initialGroupBalances.length > 0; else noGroupBalances">
+              <div class="group-balances-summary">
+                <div class="group-item" *ngFor="let group of settlementData.initialGroupBalances">
+                  <h5>Group: {{ group.groupName || 'Unnamed Group' }}</h5>
+                  <div class="balance-list">
+                    <p>
+                      <strong>{{ yourUserName }}:</strong>
+                      <span [class.positive]="getUserBalance(group.balances, yourUserId) > 0"
+                            [class.negative]="getUserBalance(group.balances, yourUserId) < 0">
+                        {{ formatCurrency(getUserBalance(group.balances, yourUserId)) }}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>{{ getFriendName() }}:</strong>
+                      <span [class.positive]="getUserBalance(group.balances, friend2Id) > 0"
+                            [class.negative]="getUserBalance(group.balances, friend2Id) < 0">
+                        {{ formatCurrency(getUserBalance(group.balances, friend2Id)) }}
+                      </span>
+                    </p>
+                  </div>
+                  <p class="explanation">
+                    This shows how much you and {{ getFriendName() }} spent compared to what you *should* have spent within the "{{ group.groupName || 'Unnamed Group' }}" group.
+                  </p>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #noGroupBalances>
+              <p class="explanation">You and {{ getFriendName() }} don't have any shared group activities recorded here.</p>
+            </ng-template>
+          </div>
+        </section>
+  
+        <hr />
+  
+        <section class="relevant-transactions-section">
+          <h3>2. What You've Already Paid Each Other:</h3>
+          <p class="explanation">
+            This lists any money you or {{ getFriendName() }} have already paid directly to each other.
+            These payments reduce the amount still owed from the expenses above.
+          </p>
+  
+          <ng-container *ngIf="settlementData.relevantTransactions.length > 0; else noRelevantTransactions">
+            <div class="transaction-list">
+              <div class="transaction-item" *ngFor="let transaction of settlementData.relevantTransactions">
+                <p>
+                  <strong>{{ transaction.payerName || 'Someone' }} paid {{ transaction.receiverName || 'Someone' }} {{ formatCurrency(transaction.amount) }}</strong>
+                </p>
+                <p class="description">{{ transaction.description || 'No description provided.' }}</p>
+                <ng-container *ngIf="transaction.isGroupTransaction">
+                  <p class="group-context">
+                    <em>(This payment was related to the group: {{ transaction.groupName || 'Unnamed Group' }})</em>
+                  </p>
+                </ng-container>
+                <ng-container *ngIf="!transaction.isGroupTransaction">
+                  <p class="group-context">
+                    <em>(This was a direct payment, not for a group)</em>
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #noRelevantTransactions>
+            <p>
+              You haven't recorded any direct payments or previous settlements with
+              {{ getFriendName() }} yet.
+            </p>
+          </ng-template>
+        </section>
+  
+        <hr />
+  
+        <section class="final-balances-section">
+          <h3>3. Your Final Outstanding Amounts:</h3>
+          <p class="explanation">
+            This is the **exact amount** you and {{ getFriendName() }} still owe or are owed
+            from all shared activities, with all your payments already taken into account.
+          </p>
+  
+          <div class="balance-category">
+            <h4>For direct expenses (after payments):</h4>
+            <div class="balance-list">
+              <p>
+                <strong>{{ yourUserName }}:</strong>
+                <span [class.positive]="getUserBalance(settlementData.finalOneToOneActivityBalances, yourUserId) > 0"
+                      [class.negative]="getUserBalance(settlementData.finalOneToOneActivityBalances, yourUserId) < 0">
+                  {{ formatCurrency(getUserBalance(settlementData.finalOneToOneActivityBalances, yourUserId)) }}
+                </span>
+              </p>
+              <p>
+                <strong>{{ getFriendName() }}:</strong>
+                <span [class.positive]="getUserBalance(settlementData.finalOneToOneActivityBalances, friend2Id) > 0"
+                      [class.negative]="getUserBalance(settlementData.finalOneToOneActivityBalances, friend2Id) < 0">
+                  {{ formatCurrency(getUserBalance(settlementData.finalOneToOneActivityBalances, friend2Id)) }}
+                </span>
+              </p>
+            </div>
+            <p class="explanation balance-meaning">
+              Remember: Green means owed to them, Red means they owe.
+            </p>
+          </div>
+  
+          <div class="balance-category">
+            <h4>For group expenses (after payments):</h4>
+            <ng-container *ngIf="settlementData.finalGroupBalances.length > 0; else noFinalGroupBalances">
+              <div class="group-balances-summary">
+                <div class="group-item" *ngFor="let group of settlementData.finalGroupBalances">
+                  <h5>Group: {{ group.groupName || 'Unnamed Group' }}</h5>
+                  <div class="balance-list">
+                    <p>
+                      <strong>{{ yourUserName }}:</strong>
+                      <span [class.positive]="getUserBalance(group.balances, yourUserId) > 0"
+                            [class.negative]="getUserBalance(group.balances, yourUserId) < 0">
+                        {{ formatCurrency(getUserBalance(group.balances, yourUserId)) }}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>{{ getFriendName() }}:</strong>
+                      <span [class.positive]="getUserBalance(group.balances, friend2Id) > 0"
+                            [class.negative]="getUserBalance(group.balances, friend2Id) < 0">
+                        {{ formatCurrency(getUserBalance(group.balances, friend2Id)) }}
+                      </span>
+                    </p>
+                  </div>
+                  <p class="explanation">
+                    This is the final outstanding amount for you and {{ getFriendName() }} within the
+                    "{{ group.groupName || 'Unnamed Group' }}" group.
+                  </p>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #noFinalGroupBalances>
+              <p class="explanation">No shared group activities with {{ getFriendName() }} that require final settlement.</p>
+            </ng-template>
+          </div>
+        </section>
+  
+        <hr />
+  
+        <section class="settlement-suggestions-section">
+          <h3>4. How to Settle Up: Recommended Payments</h3>
+          <p class="explanation">
+            To make it as easy as possible, here's the simplest way (with the fewest payments)
+            to clear all outstanding money between you and {{ getFriendName() }}.
+          </p>
+  
+          <div class="settlement-category">
+            <h4>For direct debts:</h4>
+            <ng-container *ngIf="settlementData.calculatedOneToOneSettlements.length > 0; else noOneToOneSettlements">
+              <div *ngFor="let settlement of settlementData.calculatedOneToOneSettlements">
+                <p>
+                  <strong>{{ settlement.payerName || 'Someone' }} pays {{ settlement.receiverName || 'Someone' }} {{ formatCurrency(settlement.amount) }}</strong>
+                </p>
+              </div>
+            </ng-container>
+            <ng-template #noOneToOneSettlements>
+              <p>You have no direct one-to-one debts with {{ getFriendName() }} to settle.</p>
+            </ng-template>
+          </div>
+  
+          <div class="settlement-category">
+            <h4>For group debts:</h4>
+            <ng-container *ngIf="settlementData.calculatedGroupSettlements.length > 0; else noGroupSettlements">
+              <div *ngFor="let settlement of settlementData.calculatedGroupSettlements">
+                <p>
+                  <strong>{{ settlement.payerName || 'Someone' }} pays {{ settlement.receiverName || 'Someone' }} {{ formatCurrency(settlement.amount) }}</strong>
+                  <em>(This payment is to settle money within the group: {{ getGroupName(settlement.groupId || '') }})</em>
+                </p>
+              </div>
+            </ng-container>
+            <ng-template #noGroupSettlements>
+              <p>No group-specific payments are needed between you and {{ getFriendName() }}.</p>
+            </ng-template>
+          </div>
+  
+          <p class="algorithm-note">
+            <em>Our goal is always to find the easiest way to make sure everyone is even!</em>
+          </p>
+        </section>
+  
+        <hr />
+  
+        <div class="raw-data-toggle">
+          <button (click)="toggleRawData()">{{ showRawData ? 'Hide' : 'Show' }} Raw Data (for tech-savvy)</button>
+          <pre *ngIf="showRawData" id="raw-data-display">{{ settlementData | json }}</pre>
+        </div>
+      </ng-container>
+    </ng-template>
+  </div>

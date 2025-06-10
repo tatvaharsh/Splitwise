@@ -459,6 +459,153 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse(content: finalSummary);
     }
 
+    [HttpGet("settle-summary/friends/{friend2Id}/transparency")] 
+    public async Task<IActionResult> GetFriendSettleTransparencyAsync(
+        [FromRoute] Guid friend2Id)
+    {
+        Guid loggedInUserId = _appContextService.GetUserId() ?? throw new UnauthorizedAccessException();
+        if (loggedInUserId == Guid.Empty)
+        {
+            return Unauthorized("User is not logged in or user ID is invalid.");
+        }
 
+        Guid friend1Id = loggedInUserId;
+
+        if (friend2Id == Guid.Empty || friend1Id == friend2Id)
+        {
+            return BadRequest("Invalid friend ID or attempting to get transparency with self.");
+        }
+
+        // --- Step 1: Get Initial Activity Balances ---
+        var friendBalancesSummary = await _activityService.CalculateNetBalancesForFriendsAsync(friend1Id, friend2Id);
+
+        // Deep copy initial balances to store their state before transaction application
+        var initialOneToOneActivityBalancesRaw = friendBalancesSummary.OneToOneBalances
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Create a copy
+        var initialGroupBalancesRaw = friendBalancesSummary.GroupBalancesPerGroup
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToDictionary(userKvp => userKvp.Key, userKvp => userKvp.Value)); // Deep copy groups
+
+        // --- Step 2: Get Relevant Transactions ---
+        var completedTransactions = await _transactionService.GetListAsync(
+            t => ((t.Payerid == friend1Id && t.Receiverid == friend2Id) ||
+                    (t.Payerid == friend2Id && t.Receiverid == friend1Id)) &&
+                    !t.Isdeleted);
+
+        // You'll need to fetch user and group names here or pass IDs to a service that does
+        // For demonstration, placeholders are used. In a real app, use your UserService/GroupService.
+        var userIdsInvolved = new List<Guid> { friend1Id, friend2Id };
+        userIdsInvolved.AddRange(completedTransactions.Where(t => t.Payerid.HasValue).Select(t => t.Payerid.Value));
+        userIdsInvolved.AddRange(completedTransactions.Where(t => t.Receiverid.HasValue).Select(t => t.Receiverid.Value));
+        userIdsInvolved = userIdsInvolved.Distinct().ToList();
+
+        var groupIdsInvolved = completedTransactions.Where(t => t.Groupid.HasValue).Select(t => t.Groupid.Value).Distinct().ToList();
+
+        // Imagine you have services to get names:
+        var userNames = (await _userService.GetListAsync(x => initialOneToOneActivityBalancesRaw.Keys.Contains(x.Id)))
+                .ToDictionary(u => u.Id, u => u.Username);
+        var groupNames = (await _groupService.GetListAsync(x => initialGroupBalancesRaw.Keys.Contains(x.Id)))
+                        .ToDictionary(g => g.Id, g => g.Groupname);
+
+        // Populate TransactionDetailDto with names
+        var relevantTransactionDetails = completedTransactions.Select(t => new TransactionDetailDto
+        {
+            Id = t.Id,
+            Amount = t.Amount,
+            PayerId = t.Payerid,
+            PayerName = t.Payerid.HasValue && userNames.ContainsKey(t.Payerid.Value) 
+                ? userNames[t.Payerid.Value] 
+                : "Unknown User",
+
+            ReceiverId = t.Receiverid,
+            ReceiverName = t.Receiverid.HasValue && userNames.ContainsKey(t.Receiverid.Value)
+                ? userNames[t.Receiverid.Value]
+                : "Unknown User",
+
+            GroupId = t.Groupid,
+            GroupName = t.Groupid.HasValue && groupNames.ContainsKey(t.Groupid.Value)
+                ? groupNames[t.Groupid.Value]
+                : "Unknown Group"
+
+        }).ToList();
+
+
+        // --- Step 3: Apply Transactions to Balances (Logic from original API) ---
+        // Note: The `friendBalancesSummary` object contains mutable dictionaries.
+        // Changes applied here will be reflected when calculating final settlements.
+        foreach (var transaction in completedTransactions)
+        {
+            if (transaction.Groupid == null)
+            {
+                if (transaction.Payerid.HasValue && friendBalancesSummary.OneToOneBalances.ContainsKey(transaction.Payerid.Value))
+                {
+                    friendBalancesSummary.OneToOneBalances[transaction.Payerid.Value] += transaction.Amount;
+                }
+                if (transaction.Receiverid.HasValue && friendBalancesSummary.OneToOneBalances.ContainsKey(transaction.Receiverid.Value))
+                {
+                    friendBalancesSummary.OneToOneBalances[transaction.Receiverid.Value] -= transaction.Amount;
+                }
+            }
+            else
+            {
+                var groupId = transaction.Groupid.Value;
+
+                if (friendBalancesSummary.GroupBalancesPerGroup.TryGetValue(groupId, out var groupBalances))
+                {
+                    if (transaction.Payerid.HasValue && groupBalances.ContainsKey(transaction.Payerid.Value))
+                        groupBalances[transaction.Payerid.Value] += transaction.Amount;
+
+                    if (transaction.Receiverid.HasValue && groupBalances.ContainsKey(transaction.Receiverid.Value))
+                        groupBalances[transaction.Receiverid.Value] -= transaction.Amount;
+                }
+            }
+        }
+
+        // --- Step 4: Capture Final Balances After Transactions ---
+        var finalOneToOneActivityBalancesRaw = friendBalancesSummary.OneToOneBalances;
+        var finalGroupBalancesRaw = friendBalancesSummary.GroupBalancesPerGroup;
+
+
+        // --- Step 5: Calculate Settlements ---
+        var allGroupSettlements = new List<SettleSummaryDto>();
+        foreach (var entry in finalGroupBalancesRaw)
+        {
+            var groupId = entry.Key;
+            var groupBalances = entry.Value;
+            var simplifiedSettlementsForGroup = _activityService.CalculateMinimalSettlement(groupBalances, groupId);
+            allGroupSettlements.AddRange(simplifiedSettlementsForGroup);
+        }
+
+        var simplifiedOneToOneSettlements = _activityService.CalculateMinimalSettlements(finalOneToOneActivityBalancesRaw);
+
+        // --- Step 6: Populate the Transparency DTO ---
+        var transparencySummary = new FriendSettlementTransparencyDto
+        {
+            InitialOneToOneActivityBalances = initialOneToOneActivityBalancesRaw
+                .Select(kvp => new UserBalanceDetailDto { UserId = kvp.Key, Balance = kvp.Value , UserName = userNames.GetValueOrDefault(kvp.Key, "Unknown") })
+                .ToList(),
+            InitialGroupBalances = initialGroupBalancesRaw
+                .Select(entry => new GroupBalanceDetailDto
+                {
+                    GroupId = entry.Key,
+                    GroupName = groupNames.GetValueOrDefault(entry.Key, "Unknown Group"),
+                    Balances = entry.Value.Select(kvp => new UserBalanceDetailDto { UserId = kvp.Key, Balance = kvp.Value , UserName = userNames.GetValueOrDefault(kvp.Key, "Unknown") }).ToList()
+                }).ToList(),
+            RelevantTransactions = relevantTransactionDetails, // This already has names if you fetched them
+            FinalOneToOneActivityBalances = finalOneToOneActivityBalancesRaw
+                .Select(kvp => new UserBalanceDetailDto { UserId = kvp.Key, Balance = kvp.Value , UserName = userNames.GetValueOrDefault(kvp.Key, "Unknown") })
+                .ToList(),
+            FinalGroupBalances = finalGroupBalancesRaw
+                .Select(entry => new GroupBalanceDetailDto
+                {
+                    GroupId = entry.Key,
+                    GroupName = groupNames.GetValueOrDefault(entry.Key, "Unknown Group"),
+                    Balances = entry.Value.Select(kvp => new UserBalanceDetailDto { UserId = kvp.Key, Balance = kvp.Value , UserName = userNames.GetValueOrDefault(kvp.Key, "Unknown") }).ToList()
+                }).ToList(),
+            CalculatedGroupSettlements = allGroupSettlements,
+            CalculatedOneToOneSettlements = simplifiedOneToOneSettlements
+        };
+
+        return SuccessResponse(content: transparencySummary);
+    }
 
 }

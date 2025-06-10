@@ -1,0 +1,198 @@
+.settlement-transparency-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 850px;
+    margin: 20px auto;
+    padding: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2em;
+    font-weight: 600;
+}
+
+h3 {
+    color: #34495e;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 1.6em;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 8px;
+}
+
+h4 {
+    color: #34495e;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.3em;
+}
+
+h5 {
+    color: #555;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+hr {
+    border: none;
+    border-top: 1px dashed #cccccc;
+    margin: 40px 0;
+}
+
+.overall-summary {
+    text-align: center;
+    padding: 20px;
+    background-color: #eaf6ff;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.overall-summary h3 {
+    margin-top: 0;
+    color: #007bff;
+    border-bottom: none;
+    font-size: 1.8em;
+}
+.overall-summary p {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #212529;
+}
+
+.balance-category, .settlement-category {
+    margin-bottom: 25px;
+    padding: 20px;
+    background-color: #f8fafd;
+    border-radius: 8px;
+    border: 1px solid #e9f0f7;
+}
+
+.balance-list, .group-item, .transaction-item {
+    margin-bottom: 15px;
+    padding-left: 20px;
+    border-left: 4px solid #007bff; /* Primary blue for balances */
+}
+.transaction-item {
+    border-left-color: #28a745; /* Green for transactions */
+}
+.group-item {
+    border-left-color: #ffc107; /* Orange for groups */
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.explanation, .group-context, .description, .algorithm-note {
+    font-size: 0.95em;
+    color: #666;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+strong {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Error Message */
+.error-message {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Raw Data Toggle */
+.raw-data-toggle {
+    margin-top: 40px;
+    text-align: center;
+}
+.raw-data-toggle button {
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+.raw-data-toggle button:hover {
+    background-color: #5a6268;
+}
+.raw-data-toggle pre {
+    text-align: left;
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-top: 20px;
+    font-size: 0.85em;
+    color: #333;
+}
+.back-button button {
+    color: #3f51b5;
+  }
+  /* Add these new styles */
+.balance-list .positive {
+    color: #28a745; /* Green for positive balances (money owed to them) */
+    font-weight: bold;
+}
+
+.balance-list .negative {
+    color: #dc3545; /* Red for negative balances (money they owe) */
+    font-weight: bold;
+}
+
+.highlight-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.highlight-negative {
+    color: #dc3545;
+    font-weight: bold;
+}
+/* Add/Adjust these in your settlement-transparency.component.css */
+
+.balance-meaning {
+    font-weight: normal; /* Override bold if it was applied globally */
+    font-size: 0.9em; /* Make it slightly smaller for readability */
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #eef7ff; /* Light blue background for clarity */
+    border-radius: 5px;
+    border: 1px solid #d0e8ff;
+}
+
+.highlight-positive {
+    color: #28a745; /* Stronger green for owed money */
+    font-weight: bold;
+}
+
+.highlight-negative {
+    color: #dc3545; /* Stronger red for owing money */
+    font-weight: bold;
+}
+
+/* Ensure these are applied to the numbers themselves too */
+.balance-list span.positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.balance-list span.negative {
+    color: #dc3545;
+    font-weight: bold;
+}

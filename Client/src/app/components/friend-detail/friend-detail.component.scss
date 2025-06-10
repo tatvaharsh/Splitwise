@@ -29,9 +29,19 @@
   color: #1a237e;
 }
 
+// .friend-balance-summary {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   padding: 16px 24px;
+//   background-color: white;
+//   margin: 16px 0;
+//   border-radius: 12px;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+// }
+
 .friend-balance-summary {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
   background-color: white;
@@ -39,6 +49,12 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
+
+.friend-balance-summary > :first-child {
+  margin-right: auto;
+  
+}
+
 
 .balance-card {
   display: flex;
@@ -83,6 +99,7 @@
   color: white;
   border-radius: 8px;
   padding: 8px 16px;
+  margin-left: 10px;
   font-weight: 500;
   text-transform: none;
 }

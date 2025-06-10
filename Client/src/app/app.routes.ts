@@ -9,6 +9,7 @@ import {LoginComponent} from './components/login/login.component';
 import { SignupComponent } from './components/sign-up/sign-up.component';
 import { MainLayoutComponent } from './generic/main-layout/main-layout.component';
 import { authGuard } from './generic/guard/auth.guard';
+import { SettlementTransparencyComponent } from './components/settlement-transparency/settlement-transparency.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -26,6 +27,9 @@ export const routes: Routes = [
       { path: 'friends/:id', component: FriendDetailComponent },
       { path: 'activity', component: ActivityComponent },
       { path: 'profile', component: ProfileComponent },
+      {
+        path:'transparency/:id', component: SettlementTransparencyComponent
+      }
     ]
   },
 

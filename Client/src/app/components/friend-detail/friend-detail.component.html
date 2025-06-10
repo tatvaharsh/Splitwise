@@ -30,6 +30,14 @@
     </div>
 
     <button 
+    mat-raised-button 
+    class="settle-button" 
+    (click)="navigateToTransparency(friend.id)" >
+    <mat-icon>payments</mat-icon>
+    Transparency
+  </button>
+
+    <button 
       mat-raised-button 
       class="settle-button" 
       (click)="openSettleUpDialog(friend.id)" 

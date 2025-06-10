@@ -39,7 +39,7 @@ export class FriendDetailComponent implements OnInit {
   expenseId: string = '';
   isDialogOpen = false;
   friendId: string = '';
-
+  
   constructor(
     private route: ActivatedRoute,
     private friendService: FriendService,
@@ -48,7 +48,7 @@ export class FriendDetailComponent implements OnInit {
     private deleteService: DeleteConfirmationService,
     private router: Router,
   ) {
-
+    
   }
 
   ngOnInit(): void {
@@ -61,7 +61,7 @@ export class FriendDetailComponent implements OnInit {
     });
   }
   
-
+  
   openAddExpenseDialog(friend: GetFriendResponse): void {
     this.dialog.open(AddExpenseComponent, {
       width: "500px",
@@ -69,11 +69,11 @@ export class FriendDetailComponent implements OnInit {
       data: { friend },
     })
   }
-
+  
   openSettleUpDialog(friendId: string): void {
     this.isDialogOpen = true
   }
-
+  
   getBalanceText(balance: number): string {
     if (balance > 0) {
       return `owes you ₹${Math.abs(balance)}`
@@ -83,7 +83,7 @@ export class FriendDetailComponent implements OnInit {
       return "settled up"
     }
   }
-
+  
   getBalanceClass(balance: number): string {
     if (balance > 0) {
       return "positive"
@@ -93,7 +93,7 @@ export class FriendDetailComponent implements OnInit {
       return "neutral"
     }
   }
-
+  
   formatDate(date: Date): string {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -101,7 +101,7 @@ export class FriendDetailComponent implements OnInit {
       day: "numeric",
     })
   }
-
+  
   editExpense(id: string): void {
     this.expenseService.getExpenseById(id).subscribe(expense => {
       this.dialog.open(AddExpenseComponent, {
@@ -121,9 +121,9 @@ export class FriendDetailComponent implements OnInit {
       message: `Are you sure you want to delete this item?`
     });
   }
-
+  
   deleteExpense(): void {
-      this.expenseService.deleteExpense(this.expenseId).subscribe({
+    this.expenseService.deleteExpense(this.expenseId).subscribe({
         next: () => {
           this.deleteService.close();
           this.router.navigate(['/friends']);
@@ -134,12 +134,17 @@ export class FriendDetailComponent implements OnInit {
   cancelDelete(): void {
     this.deleteService.close();
   }
-
+  
   closeDialog(): void {
     this.isDialogOpen = false
   }
-
+  
   getAbsoluteValue(amount: number): number {  
     return Math.abs(amount);
+  }
+
+  navigateToTransparency(friendId: string) {
+    this.router.navigate(["/transparency", friendId])
+
   }
 }
