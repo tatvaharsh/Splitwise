@@ -1,0 +1,228 @@
+/* Container Styling */
+.settlement-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: #2d3436;
+    line-height: 1.7;
+  }
+  
+  /* Headings */
+  h2 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #2d3436;
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #dfe6e9;
+  }
+  
+  h3 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #2d3436;
+    margin: 32px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dfe6e9;
+  }
+  
+  /* Explanation Section */
+  .explanation-section {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .explanation-section h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3436;
+    margin: 16px 0 8px;
+    border-bottom: none;
+  }
+  
+  .explanation-section h4 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin: 12px 0 8px;
+  }
+  
+  .explanation-section strong {
+    color: #1e90ff;
+    font-weight: 600;
+  }
+  
+  .explanation-section ul {
+    list-style-type: disc;
+    margin: 12px 0 12px 24px;
+  }
+  
+  .explanation-section li {
+    margin-bottom: 8px;
+  }
+  
+  .explanation-section ul > li {
+    position: relative;
+    padding-left: 12px;
+  }
+  
+  .explanation-section ul > li::before {
+    content: '•';
+    color: #1e90ff;
+    position: absolute;
+    left: -12px;
+    font-size: 1.2rem;
+  }
+  
+  .explanation-section ul ul {
+    list-style-type: circle;
+    margin-left: 20px;
+  }
+  
+  .explanation-section ul ul > li::before {
+    content: '-';
+    color: #636e72;
+    font-weight: bold;
+    left: -12px;
+  }
+  
+  /* Step Container */
+  .step-container {
+    margin-bottom: 24px;
+  }
+  
+  .step-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2d3436;
+    margin: 16px 0 8px;
+  }
+  
+  /* Balance List */
+  .balance-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+  }
+  
+  .balance-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f1f5f9;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .balance-list li:hover {
+    background-color: #e2e8f0;
+  }
+  
+  /* Amount Styling */
+  .amount {
+    font-weight: 600;
+  }
+  
+  .positive-amount {
+    color: #2ecc71; /* Green for positive amounts */
+  }
+  
+  .negative-amount {
+    color: #e53e3e; /* Red for negative amounts */
+  }
+  
+  /* Payment Detail */
+  .payment-detail {
+    background-color: #e7f1ff;
+    padding: 16px;
+    border-radius: 6px;
+    margin-top: 16px;
+  }
+  
+  .payment-detail p {
+    margin: 0;
+    color: #2d3748;
+  }
+  
+  /* Final Settlements */
+  .final-settlements .settlement-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e6ffed;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .final-settlements .settlement-item:hover {
+    background-color: #d1fae5;
+  }
+  
+  .final-settlements .settlement-item p {
+    margin: 0;
+    color: #2d3748;
+  }
+  
+  .transaction-count {
+    font-size: 1rem;
+    color: #4a5568;
+    margin-top: 16px;
+  }
+  
+  /* No Settlements */
+  .no-settlements {
+    text-align: center;
+    padding: 24px;
+    background-color: #fffbeb;
+    border: 1px dashed #fed7aa;
+    border-radius: 8px;
+    color: #9c4221;
+    font-size: 1.1rem;
+  }
+  
+  /* Horizontal Rule */
+  hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 24px 0;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .settlement-container {
+      margin: 20px 12px;
+      padding: 20px;
+    }
+  
+    h2 {
+      font-size: 1.75rem;
+    }
+  
+    h3 {
+      font-size: 1.5rem;
+    }
+  
+    .final-settlements .settlement-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  
+    .balance-list li {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  }

@@ -1,0 +1,56 @@
+  <div class="settlement-container" *ngIf="settlementSummary$">
+    <h2>Settlement Summary for Group: {{ settlementSummary$.groupName }}</h2>
+  
+    <div class="explanation-section">
+      <div [innerHtml]="generateInitialStateExplanation(
+        settlementSummary$.initialDetailedDebtsFromActivities,
+        settlementSummary$.memberAggregationDetails,
+        settlementSummary$.initialNetBalancesFromActivities,
+        settlementSummary$.memberNames
+      )"></div>
+    </div>
+  
+    <h3>Calculation Steps</h3>
+    <div *ngFor="let step of settlementSummary$.calculationSteps; let i = index" class="step-container">
+      <div [innerHtml]="sanitizeHtml(step.description)"></div>
+      <p class="step-title">Balances After This Step:</p>
+      <ul class="balance-list">
+        <li *ngFor="let balance of (step.balancesAfterStep | keyvalue)">
+          <span>{{ settlementSummary$.memberNames[balance.key] }}</span>
+          <span class="amount" [ngClass]="{'negative-amount': balance.value < 0, 'positive-amount': balance.value >= 0}">
+            ${{ balance.value | number:'1.2-2' }}
+          </span>
+        </li>
+      </ul>
+      <div *ngIf="step.settlementDetail" class="payment-detail">
+        <p>
+          <strong>{{ step.settlementDetail.payerName }}</strong> paid 
+          <strong>{{ step.settlementDetail.receiverName }}</strong> 
+          <span class="amount positive-amount">
+            ${{ step.settlementDetail.amount | number:'1.2-2' }}
+          </span>
+        </p>
+      </div>
+      <hr>
+    </div>
+  
+    <h3>Final Simplified Settlements</h3>
+    <div *ngIf="settlementSummary$.finalSimplifiedSettlements.length > 0; else noSettlements" class="final-settlements">
+      <div *ngFor="let settlement of settlementSummary$.finalSimplifiedSettlements" class="settlement-item">
+        <p>
+          <strong>{{ settlement.payerName }}</strong> pays 
+          <strong>{{ settlement.receiverName }}</strong>
+          <span class="amount positive-amount">
+            ${{ settlement.amount | number:'1.2-2' }}
+          </span>
+        </p>
+      </div>
+      <p class="transaction-count">Total transactions needed: {{ settlementSummary$.finalTransactionCount }}</p>
+    </div>
+    <ng-template #noSettlements>
+      <div class="no-settlements">
+        No settlements needed. Everyone is balanced!
+      </div>
+    </ng-template>
+  </div>
+  

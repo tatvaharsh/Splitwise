@@ -57,6 +57,14 @@
       </ng-template>
     </div>
     
+  <button 
+    mat-raised-button 
+    class="settle-button" 
+    (click)="navigateToTransparency(groupId)" >
+    <mat-icon>payments</mat-icon>
+    Bridge
+  </button>
+
     <button mat-raised-button class="settle-button" (click)="openSettleUpDialog(group.id)">
       <mat-icon>payments</mat-icon>
       Settle Up

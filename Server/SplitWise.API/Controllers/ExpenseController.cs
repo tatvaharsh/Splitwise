@@ -1,3 +1,4 @@
+using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -608,4 +609,347 @@ IFriendService friendService, IUserService userService, IAppContextService appCo
         return SuccessResponse(content: transparencySummary);
     }
 
+    [HttpGet("settle-summary-explained/{groupId}")]
+    public async Task<IActionResult> GetSettleSummaryExplainedAsync([FromRoute] Guid groupId)
+    {
+        if (groupId == Guid.Empty)
+            return BadRequest("Invalid group ID.");
+
+        // initialActivityBalances: Net balances purely from group activities/expenses,
+        // calculated by _activityService.CalculateNetBalancesForGroupAsync.
+        var initialActivityBalances = await _activityService.CalculateNetBalancesForGroupAsync(groupId);
+        var initialDetailedDebtsMap = await GetDetailedGroupDebtsAsync(groupId);
+
+        var group = await _groupService.GetOneAsync(
+            g => g.Id == groupId,
+            query => query.Include(x => x.GroupMembers).ThenInclude(gm => gm.Member)
+        );
+
+        if (group == null)
+            return NotFound("Group not found.");
+
+        var groupMemberIds = group.GroupMembers
+            .Where(m => !m.Isdeleted)
+            .Select(m => m.Memberid)
+            .ToHashSet();
+
+        var memberNames = group.GroupMembers
+            .Where(m => !m.Isdeleted)
+            .ToDictionary(m => m.Memberid, m => m.Member?.Username ?? m.Memberid.ToString());
+
+        var allTransactions = await _transactionService.GetListAsync(
+            t => !t.Isdeleted // Fetch all non-deleted transactions to filter later
+        );
+
+        var relevantTransactions = allTransactions
+            .Where(t =>
+                t.Groupid == groupId || // Transactions explicitly linked to this group
+                (t.Groupid == null &&   // OR Transactions not linked to a group but involve two members of *this* group
+                 t.Payerid.HasValue &&
+                 t.Receiverid.HasValue &&
+                 groupMemberIds.Contains(t.Payerid.Value) &&
+                 groupMemberIds.Contains(t.Receiverid.Value))
+            )
+            .Select(t => new TransactionDto
+            {
+                Id = t.Id,
+                PayerId = t.Payerid,
+                ReceiverId = t.Receiverid,
+                Amount = t.Amount,
+                Date = t.CreatedAt ?? DateTime.Now,
+                // Classify if it's explicitly part of a group activity (has a GroupId)
+                IsGroupExpense = t.Groupid == groupId
+            })
+            .OrderBy(t => t.Date)
+            .ToList();
+
+        var explanation = await GetDetailedSettleSummaryAsync(
+            groupId,
+            initialActivityBalances,
+            initialDetailedDebtsMap,
+            relevantTransactions,
+            memberNames.ToDictionary(kvp => kvp.Key.GetValueOrDefault(), kvp => kvp.Value)
+        );
+
+        return SuccessResponse(content:explanation);
+    }
+
+
+      private async Task<SettleSummaryExplanationResponseDto> GetDetailedSettleSummaryAsync(
+        Guid groupId,
+        Dictionary<Guid, decimal> initialActivityBalances, // Net balances from group activities
+        Dictionary<(Guid FromUserId, Guid ToUserId), decimal> initialDetailedDebtsMap, // Who owes whom from activities
+        List<TransactionDto> relevantTransactions, // All transactions affecting this group (expenses & settle-ups)
+        Dictionary<Guid, string> memberNames)
+    {
+        var groupName = await _groupService.GetOneAsync(x=>x.Id == groupId);
+        // currentBalances starts with the net balances from group activities only.
+        var currentBalances = new Dictionary<Guid, decimal>(initialActivityBalances);
+        var calculationSteps = new List<SettlementCalculationStepDto>();
+        var finalSimplifiedSettlements = new List<SimplifiedSettlementDto>();
+        var memberAggregationDetails = new List<MemberAggregationDetailDto>();
+
+        // Step 1: Initial Balances from Group Activities - Explanation (No change here)
+        var initialExplanationDescription = new StringBuilder();
+        initialExplanationDescription.Append("### Initial State: Balances from Group Activities\n\n");
+        initialExplanationDescription.Append("This section details the direct financial obligations arising from group expenses and how they aggregate into each member's overall net balance.\n");
+
+        if (initialDetailedDebtsMap.Any())
+        {
+            initialExplanationDescription.Append("\n**Detailed Debts (Who Owes Whom based on specific activity shares):**\n");
+            foreach (var debt in initialDetailedDebtsMap.OrderBy(d => memberNames.GetValueOrDefault(d.Key.FromUserId))
+                                                         .ThenBy(d => memberNames.GetValueOrDefault(d.Key.ToUserId)))
+            {
+                initialExplanationDescription.Append($"- {memberNames.GetValueOrDefault(debt.Key.FromUserId)} owes {memberNames.GetValueOrDefault(debt.Key.ToUserId)} ${debt.Value:F2}\n");
+            }
+
+            initialExplanationDescription.Append("\n**Bridging Direct Debts to Net Balances (Internal Aggregation Logic):**\n");
+            initialExplanationDescription.Append("The system aggregates all individual 'who owes whom' debts to determine each person's single net financial position within the group.\n");
+
+            var totalOwedByFromDetailedDebts = new Dictionary<Guid, decimal>();
+            foreach (var debt in initialDetailedDebtsMap)
+            {
+                var fromUser = debt.Key.FromUserId;
+                if (!totalOwedByFromDetailedDebts.ContainsKey(fromUser)) totalOwedByFromDetailedDebts[fromUser] = 0;
+                totalOwedByFromDetailedDebts[fromUser] += debt.Value;
+            }
+
+            var totalOwedToFromDetailedDebts = new Dictionary<Guid, decimal>();
+            foreach (var debt in initialDetailedDebtsMap)
+            {
+                var toUser = debt.Key.ToUserId;
+                if (!totalOwedToFromDetailedDebts.ContainsKey(toUser)) totalOwedToFromDetailedDebts[toUser] = 0;
+                totalOwedToFromDetailedDebts[toUser] += debt.Value;
+            }
+
+            foreach (var memberKvp in memberNames)
+            {
+                Guid memberId = memberKvp.Key;
+                string memberName = memberKvp.Value;
+
+                decimal owedTo = totalOwedToFromDetailedDebts.GetValueOrDefault(memberId);
+                decimal owedBy = totalOwedByFromDetailedDebts.GetValueOrDefault(memberId);
+                decimal calculatedNetBalance = owedTo - owedBy;
+                decimal actualServiceNetBalance = initialActivityBalances.GetValueOrDefault(memberId);
+
+                memberAggregationDetails.Add(new MemberAggregationDetailDto
+                {
+                    MemberId = memberId,
+                    MemberName = memberName,
+                    TotalOwedToThem = owedTo,
+                    TotalTheyOweOthers = owedBy,
+                    CalculatedNetBalance = calculatedNetBalance,
+                    ActualServiceNetBalance = actualServiceNetBalance,
+                    BalancesMatch = Math.Abs(calculatedNetBalance - actualServiceNetBalance) < 0.01m
+                });
+            }
+        }
+        else
+        {
+            initialExplanationDescription.Append("\n*No specific direct debts from group activities were recorded, or all initial debts self-cancelled.*\n");
+        }
+
+        initialExplanationDescription.Append("\n**Overall Net Balances after Group Activities (as determined by the system):**\n");
+        foreach (var balance in initialActivityBalances.OrderBy(b => memberNames.GetValueOrDefault(b.Key)))
+        {
+             initialExplanationDescription.Append($"- {memberNames.GetValueOrDefault(balance.Key)}: ${balance.Value:F2} ({(balance.Value > 0 ? "Creditor" : (balance.Value < 0 ? "Debtor" : "Settled"))})\n");
+        }
+
+        var initialDetailedDebtsForResponse = new Dictionary<string, decimal>();
+        foreach(var debt in initialDetailedDebtsMap)
+        {
+            initialDetailedDebtsForResponse[$"{memberNames.GetValueOrDefault(debt.Key.FromUserId)} owes {memberNames.GetValueOrDefault(debt.Key.ToUserId)}"] = debt.Value;
+        }
+
+        calculationSteps.Add(new SettlementCalculationStepDto
+        {
+            Description = initialExplanationDescription.ToString(),
+            // This step's balance shows the state *after* initial activities only.
+            BalancesAfterStep = new Dictionary<Guid, decimal>(currentBalances)
+        });
+
+        // Step 2: Apply relevant transactions to adjust balances (UNIFIED APPLICATION)
+        if (relevantTransactions.Any())
+        {
+            var transactionExplanation = new StringBuilder();
+            transactionExplanation.Append("### Transaction Adjustments\n\n");
+            transactionExplanation.Append("This section accounts for all payments between group members. These payments directly modify the net balances established from group activities.\n\n");
+
+            // Process all relevant transactions in chronological order to correctly update balances.
+            // This ensures manual settle-ups and other direct payments are factored in.
+            foreach (var transaction in relevantTransactions)
+            {
+                // Apply balance adjustments for ALL relevant transactions
+                // Payer's balance increases (they paid out, so they are owed more or owe less)
+                if (transaction.PayerId.HasValue && currentBalances.ContainsKey(transaction.PayerId.Value))
+                {
+                    currentBalances[transaction.PayerId.Value] += transaction.Amount;
+                }
+                // Receiver's balance decreases (they received money, so they are owed less or owe more)
+                if (transaction.ReceiverId.HasValue && currentBalances.ContainsKey(transaction.ReceiverId.Value))
+                {
+                    currentBalances[transaction.ReceiverId.Value] -= transaction.Amount;
+                }
+
+                var payerName = memberNames.GetValueOrDefault(transaction.PayerId.GetValueOrDefault(), transaction.PayerId?.ToString() ?? "Unknown Payer");
+                var receiverName = memberNames.GetValueOrDefault(transaction.ReceiverId.GetValueOrDefault(), transaction.ReceiverId?.ToString() ?? "Unknown Receiver");
+
+                // Generate explanation based on transaction type for clarity
+                if (transaction.IsGroupExpense)
+                {
+                    transactionExplanation.Append($"- **Group Expense Payment:** {payerName} paid {receiverName} ${transaction.Amount:F2} for group activity. *(Date: {transaction.Date:yyyy-MM-dd})*\n");
+                    transactionExplanation.Append($"  * This payment is directly related to a group activity.\n");
+                }
+                else // This is a manual settle-up or other direct payment between members
+                {
+                    transactionExplanation.Append($"- **Manual Settle-Up Payment:** {payerName} paid {receiverName} ${transaction.Amount:F2}. *(Date: {transaction.Date:yyyy-MM-dd})*\n");
+                    transactionExplanation.Append($"  * This is a direct payment made between members to adjust balances.\n");
+                }
+
+                if (!string.IsNullOrWhiteSpace(transaction.Description))
+                {
+                    transactionExplanation.Append($"  * Description: {transaction.Description}\n");
+                }
+                transactionExplanation.Append("\n"); // Add a newline after each transaction for better spacing
+            }
+
+            // Add this step with the truly adjusted balances after all relevant transactions.
+            calculationSteps.Add(new SettlementCalculationStepDto
+            {
+                Description = transactionExplanation.ToString(),
+                BalancesAfterStep = new Dictionary<Guid, decimal>(currentBalances) // This now reflects ALL transactions
+            });
+        }
+        else
+        {
+             calculationSteps.Add(new SettlementCalculationStepDto
+            {
+                Description = "### Transaction Adjustments: No manual transactions were recorded.",
+                BalancesAfterStep = new Dictionary<Guid, decimal>(currentBalances)
+            });
+        }
+
+        // --- Core Minimal Settlement Algorithm with Explanation (unchanged logic, input is updated currentBalances) ---
+        // activeBalancesForSettlement now correctly starts with balances after ALL initial activities AND manual transactions.
+        var activeBalancesForSettlement = currentBalances
+            .Where(kvp => Math.Abs(kvp.Value) > 0.01m)
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        calculationSteps.Add(new SettlementCalculationStepDto
+        {
+            Description = "### Minimal Settlement Calculation: Balances After All Adjustments\n\n" +
+                          "These are the balances after considering all initial group activities and any manual transactions. The goal is now to find the *fewest* number of payments to clear these outstanding balances.",
+            BalancesAfterStep = new Dictionary<Guid, decimal>(activeBalancesForSettlement)
+        });
+
+        int settlementStepNumber = 1;
+        while (activeBalancesForSettlement.Any(kvp => Math.Abs(kvp.Value) > 0.01m))
+        {
+            var creditors = activeBalancesForSettlement.Where(b => b.Value > 0).OrderByDescending(b => b.Value).ToList();
+            var debtors = activeBalancesForSettlement.Where(b => b.Value < 0).OrderBy(b => b.Value).ToList();
+
+            if (!creditors.Any() || !debtors.Any()) break;
+
+            var creditor = creditors.First();
+            var debtor = debtors.First();
+
+            var amountToSettle = Math.Min(creditor.Value, Math.Abs(debtor.Value));
+
+            var settlement = new SimplifiedSettlementDto
+            {
+                PayerId = debtor.Key,
+                PayerName = memberNames.GetValueOrDefault(debtor.Key, debtor.Key.ToString()),
+                ReceiverId = creditor.Key,
+                ReceiverName = memberNames.GetValueOrDefault(creditor.Key, creditor.Key.ToString()),
+                Amount = amountToSettle
+            };
+            finalSimplifiedSettlements.Add(settlement);
+
+            activeBalancesForSettlement[creditor.Key] -= amountToSettle;
+            activeBalancesForSettlement[debtor.Key] += amountToSettle;
+
+            var currentCreditorsExplanation = creditors.Select(c => $"{memberNames.GetValueOrDefault(c.Key, c.Key.ToString())}: +${c.Value:F2}").ToList();
+            var currentDebtorsExplanation = debtors.Select(d => $"{memberNames.GetValueOrDefault(d.Key, d.Key.ToString())}: ${d.Value:F2}").ToList();
+
+            calculationSteps.Add(new SettlementCalculationStepDto
+            {
+                Description = $"### Settlement Step {settlementStepNumber}: {settlement.PayerName} pays {settlement.ReceiverName} ${settlement.Amount:F2}\n\n" +
+                              $"*Current Creditors (owed money):* {string.Join(", ", currentCreditorsExplanation)}\n" +
+                              $"*Current Debtors (owe money):* {string.Join(", ", currentDebtorsExplanation)}\n\n" +
+                              $"To minimize the total number of payments, the algorithm identifies the **largest creditor** ('{settlement.ReceiverName}', owed **${creditor.Value:F2}**) and the **largest debtor** ('{settlement.PayerName}', owes **${Math.Abs(debtor.Value):F2}**). " +
+                              $"A direct payment of **${amountToSettle:F2}** is made from '{settlement.PayerName}' to '{settlement.ReceiverName}'. " +
+                              $"This amount is the lesser of the creditor's positive balance or the debtor's absolute negative balance, ensuring that at least one of them will have their balance fully settled by this transaction.",
+                BalancesAfterStep = new Dictionary<Guid, decimal>(activeBalancesForSettlement),
+                SettlementDetail = settlement,
+                CreditorsInThisStep = currentCreditorsExplanation,
+                DebtorsInThisStep = currentDebtorsExplanation
+            });
+
+            settlementStepNumber++;
+        }
+
+        var finalZeroedBalances = memberNames.Keys.ToDictionary(id => id, id => 0m);
+
+        calculationSteps.Add(new SettlementCalculationStepDto
+        {
+            Description = "### Final Balances After All Settlements\n\n" +
+                          "All outstanding balances have been settled with the minimum number of transactions.",
+            BalancesAfterStep = finalZeroedBalances
+        });
+
+        return new SettleSummaryExplanationResponseDto
+        {
+            GroupId = groupId,
+            GroupName = groupName.Groupname,
+            MemberNames = memberNames,
+            InitialNetBalancesFromActivities = initialActivityBalances,
+            InitialDetailedDebtsFromActivities = initialDetailedDebtsForResponse,
+            RelevantTransactionsConsidered = relevantTransactions,
+            // BalancesAfterAllAdjustments now accurately reflects the state *after* initial activities AND all relevant transactions.
+            BalancesAfterAllAdjustments = new Dictionary<Guid, decimal>(currentBalances),
+            CalculationSteps = calculationSteps,
+            MemberAggregationDetails = memberAggregationDetails,
+            FinalSimplifiedSettlements = finalSimplifiedSettlements,
+            FinalTransactionCount = finalSimplifiedSettlements.Count
+        };
+    }
+
+    // GetDetailedGroupDebtsAsync (unchanged)
+    private async Task<Dictionary<(Guid FromUserId, Guid ToUserId), decimal>> GetDetailedGroupDebtsAsync(Guid groupId)
+    {
+        var activities = await _activityService.GetListAsync(
+            x => x.Groupid == groupId && !x.Isdeleted,
+            query => query
+        );
+
+        var debtMap = new Dictionary<(Guid FromUserId, Guid ToUserId), decimal>();
+
+        foreach (var activity in activities)
+        {
+            if (activity.Paidbyid == null)
+                continue;
+
+            var payerId = activity.Paidbyid.Value;
+
+            foreach (var split in activity.ActivitySplits)
+            {
+                if (split.Userid == null)
+                    continue;
+
+                var userId = split.Userid.Value;
+                var amount = split.Splitamount;
+
+                if (userId == payerId)
+                    continue;
+
+                var key = (FromUserId: userId, ToUserId: payerId);
+
+                if (!debtMap.ContainsKey(key))
+                    debtMap[key] = 0;
+
+                debtMap[key] += amount;
+            }
+        }
+        return debtMap;
+    }
 }

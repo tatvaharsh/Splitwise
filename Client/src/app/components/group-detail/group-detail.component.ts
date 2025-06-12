@@ -203,4 +203,8 @@ Math: any
   closeDialog(): void {
     this.isDialogOpen = false
   }
+
+  navigateToTransparency(friendId: string) {
+    this.router.navigate(["/group-summary", friendId])
+  }
 }

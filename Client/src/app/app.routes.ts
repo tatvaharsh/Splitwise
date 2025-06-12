@@ -10,6 +10,7 @@ import { SignupComponent } from './components/sign-up/sign-up.component';
 import { MainLayoutComponent } from './generic/main-layout/main-layout.component';
 import { authGuard } from './generic/guard/auth.guard';
 import { SettlementTransparencyComponent } from './components/settlement-transparency/settlement-transparency.component';
+import { SettlementSummaryComponent } from './components/settlement-summary/settlement-summary.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -29,6 +30,9 @@ export const routes: Routes = [
       { path: 'profile', component: ProfileComponent },
       {
         path:'transparency/:id', component: SettlementTransparencyComponent
+      },
+      {
+        path:'group-summary/:id', component: SettlementSummaryComponent
       }
     ]
   },

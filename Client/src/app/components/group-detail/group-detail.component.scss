@@ -64,6 +64,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+
+.group-balance-summary > :first-child {
+  margin-right: auto;
+  
+}
+
 .balance-card {
   display: flex;
   flex-direction: column;
@@ -107,12 +113,18 @@
   color: white;
   border-radius: 8px;
   padding: 8px 16px;
+  margin-left: 10px;
   font-weight: 500;
   text-transform: none;
 }
 
 .settle-button:hover {
   background-color: #2c3e9c;
+}
+
+.settle-button:disabled {
+  background-color: #b0bec5;
+  color: #eceff1;
 }
 
 .group-tabs {

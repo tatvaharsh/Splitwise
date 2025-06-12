@@ -10,7 +10,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterOutlet } from "@angular/router"
-import { ToastrModule } from "ngx-toastr"
 @Component({
   selector: "app-root",
   standalone: true,
